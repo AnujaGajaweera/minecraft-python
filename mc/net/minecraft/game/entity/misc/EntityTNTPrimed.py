@@ -41,10 +41,6 @@ class EntityTNTPrimed(Entity):
             self.motionY *= -0.5
 
         if self.fuse <= 0:
-            self._worldObj.playSoundAtEntity(
-                self, 'random.explode', 4.0,
-                (1.0 + (self._rand.nextFloat() - self._rand.nextFloat()) * 0.2) * 0.7
-            )
             self.setEntityDead()
             self._worldObj.createExplosion(
                 None, self.posX, self.posY, self.posZ, 4.0

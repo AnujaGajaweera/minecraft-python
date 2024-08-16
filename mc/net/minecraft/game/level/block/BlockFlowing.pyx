@@ -9,7 +9,7 @@ from mc.JavaUtils cimport Random
 cdef class BlockFlowing(BlockFluid):
 
     def __cinit__(self):
-        self.__random = Random()
+        self.__rand = Random()
         self.__flowArray[0] = 0
         self.__flowArray[1] = 1
         self.__flowArray[2] = 2
@@ -30,7 +30,7 @@ cdef class BlockFlowing(BlockFluid):
         self._setBlockBounds(0.01, -0.09, 0.01, 1.01, 0.90999997, 1.01)
         self._setTickOnLoad(True)
 
-    cpdef void updateTick(self, World world, int x, int y, int z, Random random) except *:
+    cpdef updateTick(self, World world, int x, int y, int z, Random random):
         self.update(world, x, y, z, 0)
 
     cdef bint update(self, World world, int x, int y, int z, int _):
@@ -66,7 +66,7 @@ cdef class BlockFlowing(BlockFluid):
 
         hasChanged = self.__flow(world, x, y, z, x, y - 1, z)
         for i in range(4):
-            randSide = self.__random.nextInt(4 - i) + i
+            randSide = self.__rand.nextInt(4 - i) + i
             flowSide = self.__flowArray[i]
             self.__flowArray[i] = self.__flowArray[randSide]
             self.__flowArray[randSide] = flowSide
@@ -80,11 +80,11 @@ cdef class BlockFlowing(BlockFluid):
                 hasChanged = self.__flow(world, x, y, z, x, y, z + 1)
 
         if not hasChanged and change:
-            if self.__random.nextInt(3) == 0:
-                if self.__random.nextInt(3) == 0:
+            if self.__rand.nextInt(3) == 0:
+                if self.__rand.nextInt(3) == 0:
                     hasChanged = False
                     for i in range(4):
-                        randSide = self.__random.nextInt(4 - i) + i
+                        randSide = self.__rand.nextInt(4 - i) + i
                         flowSide = self.__flowArray[i]
                         self.__flowArray[i] = self.__flowArray[randSide]
                         self.__flowArray[randSide] = flowSide
@@ -187,12 +187,6 @@ cdef class BlockFlowing(BlockFluid):
 
     cdef int tickRate(self):
         return 25 if self.material == Material.lava else 5
-
-    cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z, float chance):
-        pass
-
-    def dropBlockAsItem(self, World world, int x, int y, int z):
-        pass
 
     cpdef int quantityDropped(self, Random random):
         return 0

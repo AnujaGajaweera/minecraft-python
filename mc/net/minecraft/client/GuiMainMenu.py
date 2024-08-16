@@ -9,7 +9,7 @@ from pyglet import gl
 
 import math
 
-class GuiMainTitle(GuiScreen):
+class GuiMainMenu(GuiScreen):
 
     def __init__(self):
         self.__updateCounter = 0.0
@@ -23,9 +23,16 @@ class GuiMainTitle(GuiScreen):
             'Holy cow, man!', 'It\'s a game!', 'Made in Sweden!', 'Uses Pyglet!',
             'Written in Python!', 'Reticulating splines!', 'Minecraft!', 'Yaaay!',
             'Alpha version!', 'Singleplayer!', 'Keyboard compatible!', 'Undocumented!',
-            'Ingots!'
+            'Ingots!', 'Exploding creepers!', 'That\'s not a moon!', 'l33t!', 'Create!',
+            'Survive!', 'Dungeon!', 'Exclusive!', 'The bee\'s knees!', 'Down with O.P.P.!',
+            'Closed source!', 'Classy!', 'Wow!', 'Not on steam!', '9.95 euro!',
+            'Half price!', 'Oh man!', 'Check it out!', 'Awesome community!', 'Pixels!',
+            'Teetsuuuuoooo!', 'Kaaneeeedaaaa!', 'Now with difficulty!', 'Enhanced!',
+            '90% bug free!', 'Pretty!', '12 herbs and spices!', 'Fat free!',
+            'Absolutely no memes!', 'Free dental!', 'Ask your doctor!', 'Minors welcome!',
+            'Cloud computing!', 'Legal in Finland!', 'Hard to label!', 'Technically good!'
         )
-        self.__splash = self.__splashes[int(random() * len(self.__splashes))]
+        self.__currentSplash = self.__splashes[int(random() * len(self.__splashes))]
 
     def updateScreen(self):
         self.__updateCounter += 0.01
@@ -55,22 +62,9 @@ class GuiMainTitle(GuiScreen):
         elif self.mc.session and button.id == 2:
             self.mc.displayGuiScreen(GuiLoadLevel(self))
 
-    def drawScreen(self, xm, ym):
-        gl.glDisable(gl.GL_LIGHTING)
-        gl.glDisable(gl.GL_FOG)
+    def drawScreen(self, xm, ym, renderPartialTicks):
+        self.drawDefaultBackground()
         t = tessellator
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.mc.renderEngine.getTexture('dirt.png'))
-        gl.glColor4f(1.0, 1.0, 1.0, 1.0)
-        t.startDrawingQuads()
-        t.setColorOpaque_I(4210752)
-        t.addVertexWithUV(0.0, self.height, 0.0, 0.0,
-                          self.height / 32.0 + self.__updateCounter)
-        t.addVertexWithUV(self.width, self.height, 0.0, self.width / 32.0,
-                          self.height / 32.0 + self.__updateCounter)
-        t.addVertexWithUV(self.width, 0.0, 0.0,
-                          self.width / 32.0, 0.0 + self.__updateCounter)
-        t.addVertexWithUV(0.0, 0.0, 0.0, 0.0, 0.0 + self.__updateCounter)
-        t.draw()
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.mc.renderEngine.getTexture('gui/logo.png'))
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
         t.setColorOpaque_I(16777215)
@@ -80,7 +74,7 @@ class GuiMainTitle(GuiScreen):
         gl.glRotatef(-20.0, 0.0, 0.0, 1.0)
         size = 1.8 - abs(math.sin((getMillis() % 1000) / 1000.0 * math.pi * 2.0) * 0.1)
         gl.glScalef(size, size, size)
-        self.drawCenteredString(self._fontRenderer, self.__splash, 0, -8, 16776960)
+        self.drawCenteredString(self._fontRenderer, self.__currentSplash, 0, -8, 16776960)
         gl.glPopMatrix()
         copyright = 'Copyright Mojang Specifications. Do not distribute.'
         self.drawString(
@@ -88,4 +82,4 @@ class GuiMainTitle(GuiScreen):
             self.width - self._fontRenderer.getStringWidth(copyright) - 2,
             self.height - 10, 16777215
         )
-        super().drawScreen(xm, ym)
+        super().drawScreen(xm, ym, renderPartialTicks)

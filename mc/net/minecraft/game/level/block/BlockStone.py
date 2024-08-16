@@ -6,5 +6,5 @@ class BlockStone(Block):
     def __init__(self, blocks, blockId, tex):
         super().__init__(blocks, blockId, tex, Material.rock)
 
-    def idDropped(self):
+    def idDropped(self, metadata):
         return self.blocks.cobblestone.blockID

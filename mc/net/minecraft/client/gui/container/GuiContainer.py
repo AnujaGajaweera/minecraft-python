@@ -1,4 +1,3 @@
-from mc.net.minecraft.client.render.entity.RenderManager import RenderManager
 from mc.net.minecraft.client.render.entity.RenderItem import RenderItem
 from mc.net.minecraft.client.gui.GuiScreen import GuiScreen
 from mc.net.minecraft.client.RenderHelper import RenderHelper
@@ -13,8 +12,8 @@ class GuiContainer(GuiScreen):
         self.ySize = 166
         self._inventorySlots = []
 
-    def drawScreen(self, xm, ym):
-        self._drawGradientRect(0, 0, self.width, self.height, 1610941696, -1607454624)
+    def drawScreen(self, xm, ym, renderPartialTicks):
+        self.drawDefaultBackground()
         w = (self.width - self.xSize) // 2
         h = (self.height - self.ySize) // 2
         self._drawGuiContainerBackgroundLayer()
@@ -24,18 +23,6 @@ class GuiContainer(GuiScreen):
         gl.glPopMatrix()
         gl.glPushMatrix()
         gl.glTranslatef(w, h, 0.0)
-        gl.glEnable(gl.GL_NORMALIZE)
-        gl.glEnable(gl.GL_COLOR_MATERIAL)
-        gl.glPushMatrix()
-        gl.glTranslatef(52.0, 73.0, 24.0)
-        gl.glScalef(24.0, -24.0, 24.0)
-        gl.glRotatef(10.0, 0.0, 1.0, 0.0)
-        gl.glRotatef(10.0, 1.0, 0.0, 0.0)
-        gl.glColor4f(1.0, 1.0, 1.0, 1.0)
-        RenderManager.instance.renderEntityWithPosYaw(
-            self.mc.thePlayer, 0.0, 0.0, 0.0, 0.0, 0.0
-        )
-        gl.glPopMatrix()
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
         gl.glEnable(gl.GL_NORMALIZE)
 
@@ -45,7 +32,7 @@ class GuiContainer(GuiScreen):
                 self.mc.renderEngine, stack,
                 slot.xDisplayPosition, slot.yDisplayPosition
             )
-            self.__itemRenderer.renderItemDamage(
+            self.__itemRenderer.renderItemOverlayIntoGUI(
                 self._fontRenderer, stack,
                 slot.xDisplayPosition, slot.yDisplayPosition
             )
@@ -64,7 +51,7 @@ class GuiContainer(GuiScreen):
                 self.mc.renderEngine, self.__itemStack,
                 xm - w - 8, ym - h - 8
             )
-            self.__itemRenderer.renderItemDamage(
+            self.__itemRenderer.renderItemOverlayIntoGUI(
                 self._fontRenderer, self.__itemStack,
                 xm - w - 8, ym - h - 8
             )
@@ -100,7 +87,11 @@ class GuiContainer(GuiScreen):
                 return
 
             if stack and not self.__itemStack:
-                size = stack.stackSize if button == window.mouse.LEFT else 1
+                if button == window.mouse.LEFT:
+                    size = stack.stackSize
+                else:
+                    size = (stack.stackSize + 1) // 2
+
                 self.__itemStack = slot.inventory.decrStackSize(slot.slotIndex, size)
                 if stack.stackSize == 0:
                     slot.putStack(None)
@@ -113,8 +104,24 @@ class GuiContainer(GuiScreen):
                 if self.__itemStack.stackSize == 0:
                     self.__itemStack = None
             else:
-                if not stack or not self.__itemStack or not slot.isItemValid():
+                if not stack or not self.__itemStack:
                     return
+
+                if not slot.isItemValid():
+                    if stack.itemID == self.__itemStack.itemID:
+                        if self.__itemStack.getItem().getItemStackLimit() > 1:
+                            if stack.stackSize > 0:
+                                size = stack.stackSize + self.__itemStack.stackSize
+                                if size <= self.__itemStack.getItem().getItemStackLimit():
+                                    self.__itemStack.stackSize += stack.stackSize
+                                    stack.splitStack(stack.stackSize)
+                                    if stack.stackSize == 0:
+                                        slot.putStack(None)
+
+                                    slot.onPickupFromSlot()
+                                    return
+
+                            return
 
                 if stack.itemID != self.__itemStack.itemID:
                     if self.__itemStack.stackSize > slot.inventory.getInventoryStackLimit():
@@ -126,26 +133,23 @@ class GuiContainer(GuiScreen):
                     if stack.itemID != self.__itemStack.itemID:
                         return
 
-                    if button != window.mouse.LEFT:
-                        if button == window.mouse.RIGHT:
-                            size = min(1, slot.inventory.getInventoryStackLimit() - stack.stackSize)
-                            size = min(size, self.__itemStack.getItem().getItemStackLimit() - stack.stackSize)
-                            self.__itemStack.splitStack(size)
-                            if self.__itemStack.stackSize == 0:
-                                self.__itemStack = None
+                    if button == window.mouse.LEFT:
+                        size = min(self.__itemStack.stackSize,
+                                   slot.inventory.getInventoryStackLimit() - stack.stackSize)
+                        size = min(size, self.__itemStack.getItem().getItemStackLimit() - stack.stackSize)
+                        self.__itemStack.splitStack(size)
+                        if self.__itemStack.stackSize == 0:
+                            self.__itemStack = None
 
-                            stack.stackSize += size
+                        stack.stackSize += size
+                    elif button == window.mouse.RIGHT:
+                        size = min(1, slot.inventory.getInventoryStackLimit() - stack.stackSize)
+                        size = min(size, self.__itemStack.getItem().getItemStackLimit() - stack.stackSize)
+                        self.__itemStack.splitStack(size)
+                        if self.__itemStack.stackSize == 0:
+                            self.__itemStack = None
 
-                        return
-
-                    size = min(self.__itemStack.stackSize,
-                               slot.inventory.getInventoryStackLimit() - stack.stackSize)
-                    size = min(size, self.__itemStack.getItem().getItemStackLimit() - stack.stackSize)
-                    self.__itemStack.splitStack(size)
-                    if self.__itemStack.stackSize == 0:
-                        self.__itemStack = None
-
-                    stack.stackSize += size
+                        stack.stackSize += size
         elif self.__itemStack:
             w = (self.width - self.xSize) // 2
             h = (self.height - self.ySize) // 2
@@ -168,3 +172,6 @@ class GuiContainer(GuiScreen):
 
     def guiCraftingItemsCheck(self):
         pass
+
+    def doesGuiPauseGame(self):
+        return False

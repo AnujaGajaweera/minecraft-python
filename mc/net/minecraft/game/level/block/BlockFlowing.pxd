@@ -9,10 +9,10 @@ cdef class BlockFlowing(BlockFluid):
     cdef:
         int __stillId
         int __movingId
-        Random __random
+        Random __rand
         int[4] __flowArray
 
-    cpdef void updateTick(self, World world, int x, int y, int z, Random random) except *
+    cpdef updateTick(self, World world, int x, int y, int z, Random random)
     cdef bint update(self, World world, int x, int y, int z, int _)
     cdef bint __liquidSpread(self, World world, int x0, int y0, int z0,
                              int x1, int y1, int z1)
@@ -23,7 +23,6 @@ cdef class BlockFlowing(BlockFluid):
     cpdef bint isOpaqueCube(self)
     cpdef void onNeighborBlockChange(self, World world, int x, int y, int z, int blockType) except *
     cdef int tickRate(self)
-    cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z, float chance)
     cpdef int quantityDropped(self, Random random)
     cdef int getRenderBlockPass(self)
     cdef bint __extinguishFireLava(self, World world, int x, int y, int z)

@@ -23,7 +23,7 @@ cdef class BlockFluid(Block):
         self._setTickOnLoad(True)
         self.setResistance(2.0)
 
-    cpdef int getBlockTexture(self, int face):
+    cpdef int getBlockTextureFromSide(self, int face):
         if self.material == Material.lava or face == 1 or face == 0:
             return self.blockIndexInTexture
         else:
@@ -32,7 +32,7 @@ cdef class BlockFluid(Block):
     cpdef bint renderAsNormalBlock(self):
         return False
 
-    cpdef void updateTick(self, World world, int x, int y, int z, Random random) except *:
+    cpdef updateTick(self, World world, int x, int y, int z, Random random):
         self.update(world, x, y, z, 0)
 
     cdef bint update(self, World world, int x, int y, int z, int _):
@@ -106,7 +106,7 @@ cdef class BlockFluid(Block):
         return False
 
     cdef float getBlockBrightness(self, World world, int x, int y, int z):
-        return 100.0 if self.material == Material.lava else world.getBlockLightValue(x, y, z)
+        return 100.0 if self.material == Material.lava else world.getBrightness(x, y, z)
 
     cpdef bint shouldSideBeRendered(self, World world, int x, int y, int z, int layer):
         cdef int block
@@ -141,12 +141,6 @@ cdef class BlockFluid(Block):
 
     cdef int tickRate(self):
         return 25 if self.material == Material.lava else 5
-
-    cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z, float chance):
-        pass
-
-    def dropBlockAsItem(self, World world, int x, int y, int z):
-        pass
 
     cpdef int quantityDropped(self, Random random):
         return 0

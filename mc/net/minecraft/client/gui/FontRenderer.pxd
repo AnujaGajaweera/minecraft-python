@@ -2,12 +2,15 @@
 
 cimport cython
 
+from mc.JavaUtils cimport IntBuffer
+
 @cython.final
 cdef class FontRenderer:
 
     cdef:
-        object __options
         int[256] __charWidth
         int __fontTextureName
+        int __fontDisplayLists
+        IntBuffer __buffer
 
     cdef __renderString(self, str string, int x, int y, int color, bint darken=?)

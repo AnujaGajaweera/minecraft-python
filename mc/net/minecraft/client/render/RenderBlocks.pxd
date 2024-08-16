@@ -20,8 +20,9 @@ cdef class RenderBlocks:
     cdef __renderBlockGear(self, Block block, int x, int y, int z)
     cdef __renderBlockTorch(self, Block block, float x, float y, float z,
                             float xOffset, float zOffset)
-    cdef __renderBlockPlant(self, Block block, float x, float y, float z)
-    cdef float __shouldSideBeRendered(self, int x, int y, int z)
+    cdef __renderBlockPlant(self, Block block, int metadata, float x, float y, float z)
+    cdef __renderBlockCrops(self, Block block, int metadata, float x, float y, float z)
+    cdef float __materialNotWater(self, int x, int y, int z)
     cdef __renderBlockBottom(self, Block block, float x, float y, float z, int tex)
     cdef __renderBlockTop(self, Block block, float x, float y, float z, int tex)
     cdef __renderBlockNorth(self, Block block, int x, int y, int z, int tex)

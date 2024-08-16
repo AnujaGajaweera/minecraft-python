@@ -1,9 +1,9 @@
 from enum import Enum
 
-Material = (False, True, True)
-MaterialTransparent = (False, False, False)
-MaterialLiquid = (True, False, True)
-MaterialLogic = (False, False, False)
+Material = (False, True, True, True)
+MaterialTransparent = (False, False, False, False)
+MaterialLiquid = (True, False, True, True)
+MaterialLogic = (False, False, False, False)
 
 class Material(Enum):
     air = ('air', *MaterialTransparent)
@@ -13,6 +13,7 @@ class Material(Enum):
     iron = ('iron', *Material)
     water = ('water', *MaterialLiquid)
     lava = ('lava', *MaterialLiquid)
+    leaves = ('leaves', *Material)
     plants = ('plants', *MaterialLogic)
     sponge = ('sponge', *Material)
     cloth = ('cloth', *Material)
@@ -22,11 +23,12 @@ class Material(Enum):
     glass = ('glass', *Material)
     tnt = ('tnt', *Material)
 
-    def __init__(self, name, isLiquid, isSolid, canBlockGrass):
+    def __init__(self, name, isLiquid, isSolid, canBlockGrass, getIsSolid):
         self.__name = name
         self.__isLiquid = isLiquid
         self.__isSolid = isSolid
         self.__canBlockGrass = canBlockGrass
+        self.__getIsSolid = getIsSolid
 
     def getIsLiquid(self):
         return self.__isLiquid
@@ -36,3 +38,6 @@ class Material(Enum):
 
     def getCanBlockGrass(self):
         return self.__canBlockGrass
+
+    def getIsSolid(self):
+        return self.__getIsSolid

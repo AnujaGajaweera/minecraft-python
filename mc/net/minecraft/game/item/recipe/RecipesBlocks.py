@@ -1,2 +1,0 @@
-class RecipesBlocks:
-    pass

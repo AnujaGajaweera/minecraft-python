@@ -42,7 +42,7 @@ cdef class BlockFire(Block):
     cpdef int quantityDropped(self, Random random):
         return 0
 
-    cpdef void updateTick(self, World world, int x, int y, int z, Random random) except *:
+    cpdef updateTick(self, World world, int x, int y, int z, Random random):
         cdef int xx, yy, zz, highChance, chance
         if self.__canNeighborCatchFire(world, x, y, z) or \
            world.isBlockNormalCube(x, y - 1, z) and random.nextInt(5) != 0:
@@ -104,7 +104,7 @@ cdef class BlockFire(Block):
                 world.setBlockWithNotify(x, y, z, 0)
 
             if isTNT:
-                self.blocks.tnt.onBlockDestroyedByPlayer(world, x, y, z)
+                self.blocks.tnt.onBlockDestroyedByPlayer(world, x, y, z, 0)
 
     cdef bint __canNeighborCatchFire(self, World world, int x, int y, int z):
         if self.canBlockCatchFire(world, x + 1, y, z):
@@ -156,6 +156,12 @@ cdef class BlockFire(Block):
     cpdef void randomDisplayTick(self, World world, int x, int y, int z, Random random):
         cdef int i
         cdef float posX, posY, posZ
+
+        if random.nextInt(10) == 0:
+            world.playSoundAtPlayer(
+                x + 0.5, y + 0.5, z + 0.5, 'fire.fire',
+                1.0 + random.nextFloat(), random.nextFloat() * 0.7 + 0.3
+            )
 
         if not world.isBlockNormalCube(x, y - 1, z) and not \
            self.blocks.fire.canBlockCatchFire(world, x, y - 1, z):

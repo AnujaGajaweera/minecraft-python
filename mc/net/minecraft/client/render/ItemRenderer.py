@@ -15,7 +15,7 @@ class ItemRenderer:
         self.__prevEquippedProgress = 0.0
         self.__swingProgress = 0
         self.__itemSwingState = False
-        self.__renderBlocksInstance = RenderBlocks(tessellator)
+        self.__renderBlocksInstance = RenderBlocks()
 
     def renderItemInFirstPerson(self, alpha):
         progress = self.__prevEquippedProgress + (self.__equippedProgress - self.__prevEquippedProgress) * alpha
@@ -31,6 +31,8 @@ class ItemRenderer:
         RenderHelper.enableStandardItemLighting()
         gl.glPopMatrix()
         gl.glPushMatrix()
+        if self.__swingProgress == -1:
+            self.__swingProgress += 1
         if self.__itemSwingState:
             slot = (self.__swingProgress + alpha) / 8.0
             swingY = math.sin(slot * math.pi)
@@ -50,9 +52,9 @@ class ItemRenderer:
             gl.glRotatef(-swingX * 20.0, 0.0, 0.0, 1.0)
             gl.glRotatef(-swingX * 80.0, 1.0, 0.0, 0.0)
 
-        brightness = self.__mc.theWorld.getBlockLightValue(int(self.__mc.thePlayer.posX),
-                                                           int(self.__mc.thePlayer.posY),
-                                                           int(self.__mc.thePlayer.posZ))
+        brightness = self.__mc.theWorld.getBrightness(int(self.__mc.thePlayer.posX),
+                                                      int(self.__mc.thePlayer.posY),
+                                                      int(self.__mc.thePlayer.posZ))
         gl.glColor4f(brightness, brightness, brightness, 1.0)
         if self.__itemToRender:
             gl.glScalef(0.4, 0.4, 0.4)
@@ -153,7 +155,7 @@ class ItemRenderer:
         gl.glPopMatrix()
         RenderHelper.disableStandardItemLighting()
 
-    def renderInMaterial(self, alpha):
+    def renderOverlays(self, alpha):
         gl.glDisable(gl.GL_ALPHA_TEST)
         if self.__mc.thePlayer.fire > 0:
             tex = self.__mc.renderEngine.getTexture('terrain.png')

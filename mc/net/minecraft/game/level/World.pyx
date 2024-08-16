@@ -16,6 +16,7 @@ from mc.net.minecraft.game.physics.Vec3D import Vec3D
 from mc.net.minecraft.game.level.EntityMap cimport EntityMap
 from mc.net.minecraft.game.level.block.Block cimport Block
 from mc.net.minecraft.game.level.block.Blocks import blocks
+from mc.net.minecraft.game.level.path.Pathfinder cimport Pathfinder
 from mc.JavaUtils cimport Random
 
 import gc
@@ -82,6 +83,10 @@ cdef class World:
 
         self.skyBrightness = 1.0
 
+        self.pathFinder = Pathfinder(self)
+
+        self.difficultySetting = 2
+
     def __dealloc__(self):
         free(self.blocks)
         free(self.__data)
@@ -111,7 +116,63 @@ cdef class World:
         self.height = h
         self.length = d
         self.blocks = <char*>malloc(sizeof(char) * len(b))
+        self.__size = len(b)
+
+        for i in range(256):
+            self.__lightOpacity[i] = blocks.lightOpacity[i]
+            self.__lightValue[i] = blocks.lightValue[i]
+
+        for x in range(self.width):
+            for z in range(self.length):
+                y = 0
+                while y < self.height:
+                    blockId = 0
+                    if y <= 1 and y < self.groundLevel - 1 and \
+                       b[((y + 1) * self.length + z) * self.width + x]:
+                        blockId = blocks.lavaStill.blockID
+                    elif y < self.groundLevel - 1:
+                        blockId = blocks.bedrock.blockID
+                    elif y < self.groundLevel:
+                        if self.groundLevel > self.waterLevel and \
+                           self.defaultFluid == blocks.waterMoving.blockID:
+                            blockId = blocks.grass.blockID
+                        else:
+                            blockId = blocks.dirt.blockID
+                    elif y < self.waterLevel:
+                        blockId = self.defaultFluid
+
+                    b[(y * self.length + z) * self.width + x] = blockId
+                    if y == 1 and x != 0 and z != 0 and x != self.width - 1 and z != self.length - 1:
+                        y = self.height - 2
+
+                    y += 1
+
         self.__data = <char*>malloc(sizeof(char) * len(b))
+        for i in range(len(b)):
+            self.blocks[i] = b[i]
+            self.__data[i] = 0
+
+        self.__heightMap = <int*>malloc(sizeof(int) * (w * d))
+        for i in range(w * d):
+            self.__heightMap[i] = h
+
+        self.__calculateLighting()
+        for worldAccess in self.__worldAccesses:
+            worldAccess.loadRenderers()
+
+        self.__tickList.clear()
+        self.__findSpawn()
+        self.load()
+        gc.collect()
+
+    def loadWorld(self, int w, int h, int d, bytearray b, bytearray data):
+        cdef int x, y, z, i, skyBrightness, br
+        cdef char blockId
+
+        self.width = w
+        self.height = h
+        self.length = d
+        self.blocks = <char*>malloc(sizeof(char) * len(b))
         self.__size = len(b)
 
         for i in range(256):
@@ -145,44 +206,25 @@ cdef class World:
 
         for i in range(len(b)):
             self.blocks[i] = b[i]
-            self.__data[i] = 0
+
+        self.__data = <char*>malloc(sizeof(char) * len(data))
+        for i in range(len(data)):
+            self.__data[i] = data[i]
 
         self.__heightMap = <int*>malloc(sizeof(int) * (w * d))
         for i in range(w * d):
             self.__heightMap[i] = h
 
-        skyBrightness = <int>(15.0 * self.skyBrightness)
-        for x in range(self.width):
-            for z in range(self.length):
-                y = self.height - 1
-                while y > 0 and self.__lightOpacity[self.getBlockId(x, y, z)] == 0:
-                    y -= 1
-
-                self.__heightMap[x + y * self.width] = z + 1
-
-                for y in range(self.height):
-                    br = self.__heightMap[x + z * self.width]
-                    br = skyBrightness if y >= br else 0
-                    blockId = self.blocks[(y * self.length + z) * self.width + x]
-                    if br < self.__lightValue[blockId]:
-                        br = self.__lightValue[blockId]
-
-                    i = (y * self.length + z) * self.width + x
-                    self.__data[i] = <char>((self.__data[i] & 240) + br)
-
-        for x in range(self.width):
-            for z in range(self.length):
-                self.__updateLight(x, 0, z, x + 1, self.height, z + 1)
-
+        self.__calculateLighting()
         for worldAccess in self.__worldAccesses:
             worldAccess.loadRenderers()
 
         self.__tickList.clear()
-        self.findSpawn()
+        self.__findSpawn()
         self.load()
         gc.collect()
 
-    cdef findSpawn(self):
+    cdef __findSpawn(self):
         cdef int i, x, y, z, xx, yy, zz
         cdef Random random = Random()
 
@@ -220,6 +262,27 @@ cdef class World:
                 self.zSpawn = z
                 break
 
+    cdef __calculateLighting(self):
+        skyBrightness = <int>(15.0 * self.skyBrightness)
+        for x in range(self.width):
+            for z in range(self.length):
+                y = self.height - 1
+                while y > 0 and self.__lightOpacity[self.getBlockId(x, y, z)] == 0:
+                    y -= 1
+
+                self.__heightMap[x + y * self.width] = z + 1
+                for y in range(self.height):
+                    br = self.__heightMap[x + z * self.width]
+                    br = skyBrightness if y >= br else 0
+                    blockId = self.blocks[(y * self.length + z) * self.width + x]
+                    br = max(self.__lightValue[blockId], br)
+                    i = (y * self.length + z) * self.width + x
+                    self.__data[i] = <char>((self.__data[i] & 240) + br)
+
+        for x in range(self.width):
+            for z in range(self.length):
+                self.__updateBlockLight(x, 0, z, x + 1, self.height, z + 1)
+
     cdef void __updateSkylight(self, int x0, int y0, int x1, int y1) except *:
         cdef int x, z, oldDepth, y, yl0, yl1
 
@@ -235,13 +298,13 @@ cdef class World:
                 if oldDepth != y:
                     yl0 = oldDepth if oldDepth < y else y
                     yl1 = oldDepth if oldDepth > y else y
-                    self.__updateLight(x, yl0, z, x + 1, yl1, z + 1)
+                    self.__updateBlockLight(x, yl0, z, x + 1, yl1, z + 1)
 
-        self.__updateLight(0, 0, 0, 10, 10, 10)
+        self.__updateBlockLight(0, 0, 0, 10, 10, 10)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef void __updateLight(self, int x0, int y0, int z0, int x1, int y1, int z1):
+    cdef void __updateBlockLight(self, int x0, int y0, int z0, int x1, int y1, int z1):
         cdef int i, x, y, z, count, br, counter, depth, opacity, newDepth
         cdef int[:] lightCounter = np.zeros(1024, dtype=np.int32)
         cdef list lightArrays = []
@@ -405,7 +468,6 @@ cdef class World:
         self.notifyBlocksOfNeighborChange(x1, y1, z1, block1)
 
     cpdef bint setBlock(self, int x, int y, int z, int blockType):
-        cdef int lightAdjust, lightX, lightY, lightZ, lightIdx
         cdef char oldBlock
         cdef RenderGlobal worldAccess
 
@@ -427,25 +489,10 @@ cdef class World:
         if blockType != 0:
             blocks.blocksList[blockType].onBlockAdded(self, x, y, z)
 
-        lightAdjust = self.rand.nextInt(8)
-        if x < 0:
-            lightX = 0
-        elif x >= self.width:
-            lightX = self.width - 1
-        if y < 0:
-            lightY = 0
-        elif y >= self.height:
-            lightY = self.height - 1
-        if z < 0:
-            lightZ = 0
-        elif z >= self.length:
-            lightZ = self.length - 1
-
-        lightIdx = (lightY * self.length + lightZ) * self.width + lightX
-        self.__data[lightIdx] = <char>((self.__data[lightIdx] & 15) + (lightAdjust << 4))
+        self.__data[(y * self.length + z) * self.width + x] = 0
 
         self.__updateSkylight(x, z, 1, 1)
-        self.__updateLight(x, y, z, x + 1, y + 1, z + 1)
+        self.__updateBlockLight(x, y, z, x + 1, y + 1, z + 1)
 
         for worldAccess in self.__worldAccesses:
             worldAccess.markBlockAndNeighborsNeedsUpdate(x, y, z)
@@ -474,7 +521,7 @@ cdef class World:
             return False
 
         self.blocks[(y * self.length + z) * self.width + x] = <char>blockType
-        self.__updateLight(x, y, z, x + 1, y + 1, z + 1)
+        self.__updateBlockLight(x, y, z, x + 1, y + 1, z + 1)
         return True
 
     cdef __notifyBlockOfNeighborChange(self, int x, int y, int z, int blockType):
@@ -499,7 +546,7 @@ cdef class World:
         elif z >= self.length:
             z = self.length - 1
 
-        return self.__getBlockMetadata(x, y, z) > 3
+        return self.__getBlockLightValue(x, y, z) > 3
 
     cpdef inline bint isFullyLit(self, int x, int y, int z):
         if x < 0:
@@ -515,7 +562,7 @@ cdef class World:
         elif z >= self.length:
             z = self.length - 1
 
-        return self.__getBlockMetadata(x, y, z) < 14
+        return self.__getBlockLightValue(x, y, z) < 14
 
     cpdef inline int getBlockId(self, int x, int y, int z):
         if x < 0:
@@ -740,7 +787,7 @@ cdef class World:
         self.zSpawn = z
         self.rotSpawn = rotationYaw
 
-    cpdef inline float getBlockLightValue(self, int x, int y, int z):
+    cpdef inline float getBrightness(self, int x, int y, int z):
         if x < 0:
             x = 0
         elif x >= self.width:
@@ -756,7 +803,7 @@ cdef class World:
 
         return self.__lightBrightnessTable[self.__data[(y * self.length + z) * self.width + x] & 15]
 
-    cdef inline char __getBlockMetadata(self, int x, int y, int z):
+    cdef inline char __getBlockLightValue(self, int x, int y, int z):
         if x < 0:
             x = 0
         elif x >= self.width:
@@ -772,7 +819,7 @@ cdef class World:
 
         return <char>(self.__data[(y * self.length + z) * self.width + x] & 15)
 
-    cdef inline char getBlockBrightness(self, int x, int y, int z):
+    cpdef inline char getBlockMetadata(self, int x, int y, int z):
         if x < 0:
             x = 0
         elif x >= self.width:
@@ -787,6 +834,29 @@ cdef class World:
             z = self.length - 1
 
         return <char>((self.__data[(y * self.length + z) * self.width + x] % 0x100000000) >> 4 & 15)
+
+    cpdef setBlockMetadata(self, int x, int y, int z, int metadata):
+        cdef int dataIdx
+        cdef RenderGlobal worldAccess
+
+        if x < 0:
+            x = 0
+        elif x >= self.width:
+            x = self.width - 1
+        if y < 0:
+            y = 0
+        elif y >= self.height:
+            y = self.height - 1
+        if z < 0:
+            z = 0
+        elif z >= self.length:
+            z = self.length - 1
+
+        dataIdx = (y * self.length + z) * self.width + x
+        self.__data[dataIdx] = <char>((self.__data[dataIdx] & 15) + (metadata << 4))
+
+        for worldAccess in self.__worldAccesses:
+            worldAccess.markBlockAndNeighborsNeedsUpdate(x, y, z)
 
     def getBlockMaterial(self, int x, int y, int z):
         cdef int block = self.getBlockId(x, y, z)
@@ -987,6 +1057,7 @@ cdef class World:
     def releaseEntitySkin(self, entity):
         self.entityMap.remove(entity)
 
+    @cython.cdivision(True)
     def createExplosion(self, entity, float x, float y, float z, float radius):
         cdef int minX, maxX, minY, maxY, minZ, maxZ, xx, yy, zz, posX, posY, posZ, \
                  blockId, pos, i
@@ -995,6 +1066,10 @@ cdef class World:
         cdef list entities, positions
         cdef Block block
 
+        self.playSoundAtPlayer(
+            x, y, z, 'random.explode', 4.0,
+            (1.0 + (self.rand.nextFloat() - self.rand.nextFloat()) * 0.2) * 0.7
+        )
         explodePositions = set()
 
         for xx in range(16):
@@ -1009,7 +1084,7 @@ cdef class World:
                         radX /= d
                         radY /= d
                         radZ /= d
-                        fallout = 4.0 * (0.7 + self.rand.nextFloat() * 0.6)
+                        fallout = radius * (0.7 + self.rand.nextFloat() * 0.6)
                         nextX = x
                         nextY = y
                         nextZ = z
@@ -1030,19 +1105,20 @@ cdef class World:
                             nextZ += radZ * 0.3
                             fallout -= 0.3
 
-        minX = <int>(x - 8.0 - 1.0)
-        maxX = <int>(x + 8.0 + 1.0)
-        minY = <int>(y - 8.0 - 1.0)
-        maxY = <int>(y + 8.0 + 1.0)
-        minZ = <int>(z - 8.0 - 1.0)
-        maxZ = <int>(z + 8.0 + 1.0)
-        entities = self.entityMap.getEntities(None, minX, minY, minZ, maxX, maxY, maxZ)
+        radius *= 2.0
+        minX = <int>(x - radius - 1.0)
+        maxX = <int>(x + radius + 1.0)
+        minY = <int>(y - radius - 1.0)
+        maxY = <int>(y + radius + 1.0)
+        minZ = <int>(z - radius - 1.0)
+        maxZ = <int>(z + radius + 1.0)
+        entities = self.entityMap.getEntities(entity, minX, minY, minZ, maxX, maxY, maxZ)
         vec = Vec3D(x, y, z)
         for e in entities:
             xd = e.posX - x
             yd = e.posY - y
             zd = e.posZ - z
-            d = sqrt(xd * xd + yd * yd + zd * zd) / 8.0
+            d = sqrt(xd * xd + yd * yd + zd * zd) / radius
             if d > 1.0:
                 continue
 
@@ -1054,12 +1130,13 @@ cdef class World:
             yd /= d
             zd /= d
             density = self.__getBlockDensity(vec, e.boundingBox)
-            d = (1.0 - (d / 8.0)) * density
-            e.attackEntityFrom(None, <int>((d * d + d) / 2.0 * 64.0 + 1.0))
+            d = (1.0 - (d / radius)) * density
+            e.attackEntityFrom(entity, <int>((d * d + d) / 2.0 * 8.0 * radius + 1.0))
             e.motionX += xd * d
             e.motionY += yd * d
             e.motionZ += zd * d
 
+        radius /= 2.0
         positions = list(explodePositions)
         for i in range(len(positions) - 1, -1, -1):
             pos = positions[i]
@@ -1079,7 +1156,7 @@ cdef class World:
                 xr /= d
                 yr /= d
                 zr /= d
-                d = 0.5 / (d / 4.0 + 0.1)
+                d = 0.5 / (d / radius + 0.1)
                 d *= self.rand.nextFloat() * self.rand.nextFloat() + 0.3
                 xr *= d
                 yr *= d
@@ -1092,10 +1169,14 @@ cdef class World:
 
                 if blockId > 0:
                     block = <Block>blocks.blocksList[blockId]
-                    block.dropBlockAsItemWithChance(self, posX, posY, posZ, 0.3)
+                    block.dropBlockAsItemWithChance(
+                        self, posX, posY, posZ,
+                        self.getBlockMetadata(posX, posY, posZ), 0.3
+                    )
                     self.setBlockWithNotify(posX, posY, posZ, 0)
                     block.onBlockDestroyedByExplosion(self, posX, posY, posZ)
 
+    @cython.cdivision(True)
     cdef float __getBlockDensity(self, vec, AxisAlignedBB box):
         cdef float xd, yd, zd, minX, minY, minZ, x, y, z
         cdef int noHits, total
@@ -1355,23 +1436,22 @@ cdef class World:
 
     def playSoundAtEntity(self, entity, str name, float volume, float pitch):
         cdef float d, xd, yd, zd
+        cdef RenderGlobal worldAccess
         for worldAccess in self.__worldAccesses:
             d = 16.0
             if volume > 1.0:
                 d = 16.0 * volume
 
-            xd = self.playerEntity.posX - entity.posX
-            yd = self.playerEntity.posY - entity.posY
-            zd = self.playerEntity.posZ - entity.posZ
-            if xd * xd + yd * yd + zd * zd < d * d:
+            if self.playerEntity.getDistanceSqToEntity(entity) < d * d:
                 worldAccess.playSound(
                     name, entity.posX, entity.posY - entity.yOffset,
                     entity.posZ, volume, pitch
                 )
 
-    def playSoundEffect(self, float x, float y, float z, str name,
-                        float volume, float pitch):
+    def playSoundAtPlayer(self, float x, float y, float z, str name,
+                          float volume, float pitch):
         cdef float d, xd, yd, zd
+        cdef RenderGlobal worldAccess
         for worldAccess in self.__worldAccesses:
             d = 16.0
             if volume > 1.0:
@@ -1398,7 +1478,7 @@ cdef class World:
             x += 1
 
         if self.getBlockId(x, y, z) == blocks.fire.blockID:
-            self.playSoundEffect(
+            self.playSoundAtPlayer(
                 x + 0.5, y + 0.5, z + 0.5, 'random.fizz', 0.5,
                 2.6 + (self.rand.nextFloat() - self.rand.nextFloat()) * 0.8
             )
@@ -1416,6 +1496,7 @@ cdef class World:
 
     def spawnParticle(self, str particle, float x, float y, float z,
                       float xr, float yr, float zr):
+        cdef RenderGlobal worldAccess
         for worldAccess in self.__worldAccesses:
             worldAccess.spawnParticle(particle, x, y, z, xr, yr, zr)
 
@@ -1445,8 +1526,5 @@ cdef class World:
 
         return data
 
-    def getDebugLoadedEntities(self):
-        return str(len(self.entityMap.all))
-
-    def getDebugMapInfo(self):
-        return str(len(self.__tickList)) + ' / ' + str(len(self.map))
+    def debugSkylightUpdates(self):
+        return str(len(self.__tickList))

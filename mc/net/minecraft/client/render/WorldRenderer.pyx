@@ -2,11 +2,10 @@
 
 cimport cython
 
-from mc.net.minecraft.client.render.Frustum cimport Frustum
+from mc.net.minecraft.client.render.camera.Frustum cimport Frustum
 from mc.net.minecraft.client.render.Tessellator cimport Tessellator
 from mc.net.minecraft.client.render.Tessellator import tessellator
 from mc.net.minecraft.client.render.RenderBlocks cimport RenderBlocks
-from mc.net.minecraft.client.render.entity.RenderItem import RenderItem
 from mc.net.minecraft.game.level.block.Blocks import blocks
 from mc.net.minecraft.game.level.block.Block cimport Block
 from mc.net.minecraft.game.level.World cimport World
@@ -31,14 +30,16 @@ cdef class WorldRenderer:
         self.__t = tessellator
         self.__glRenderList = -1
         self.isInFrustum = False
+        self.isVisible = True
         self.needsUpdate = False
 
     def __init__(self, World world, int posX, int posY, int posZ,
                  int size, int lists, bint fake=False):
+        from mc.net.minecraft.client.render.entity.RenderItem import RenderItem
         if fake:
             return
 
-        self.__renderBlocks = RenderBlocks(tessellator, world)
+        self.__renderBlocks = RenderBlocks(world)
         self.__worldObj = world
         self.__posX = posX
         self.__posY = posY
@@ -134,3 +135,6 @@ cdef class WorldRenderer:
 
     cdef updateInFrustum(self, Frustum frustum):
         self.isInFrustum = frustum.isVisible(self.__rendererBoundingBox)
+
+    def callOcclusionQueryList(self):
+        gl.glCallList(self.__glRenderList + 2)

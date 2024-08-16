@@ -19,24 +19,20 @@ class RenderHelper:
         gl.glEnable(gl.GL_LIGHT1)
         gl.glEnable(gl.GL_COLOR_MATERIAL)
         gl.glColorMaterial(gl.GL_FRONT_AND_BACK, gl.GL_AMBIENT_AND_DIFFUSE)
-        x = 0.4
-        y = 0.6
-        z = 0.8
-        gl.glLightModelf(gl.GL_LIGHT_MODEL_LOCAL_VIEWER, 1.0)
-        vec = Vec3D(0.3, 1.0, -0.2)
+        vec = Vec3D(0.3, 1.0, -0.7)
         RenderHelper.__setColorBuffer(vec.xCoord, vec.yCoord, vec.zCoord,
                                       0.0).glLightfv(gl.GL_LIGHT0, gl.GL_POSITION)
-        RenderHelper.__setColorBuffer(y, y, y, 1.0).glLightfv(gl.GL_LIGHT0, gl.GL_DIFFUSE)
+        RenderHelper.__setColorBuffer(0.5, 0.5, 0.5, 1.0).glLightfv(gl.GL_LIGHT0, gl.GL_DIFFUSE)
         RenderHelper.__setColorBuffer(0.0, 0.0, 0.0, 1.0).glLightfv(gl.GL_LIGHT0, gl.GL_AMBIENT)
-        RenderHelper.__setColorBuffer(z, z, z, 1.0).glLightfv(gl.GL_LIGHT0, gl.GL_SPECULAR)
-        vec = Vec3D(-0.3, 1.0, 0.2)
+        RenderHelper.__setColorBuffer(0.0, 0.0, 0.0, 1.0).glLightfv(gl.GL_LIGHT0, gl.GL_SPECULAR)
+        vec = Vec3D(-0.7, 1.0, 0.2)
         RenderHelper.__setColorBuffer(vec.xCoord, vec.yCoord, vec.zCoord,
                                       0.0).glLightfv(gl.GL_LIGHT1, gl.GL_POSITION)
-        RenderHelper.__setColorBuffer(0.6, 0.6, 0.6, 1.0).glLightfv(gl.GL_LIGHT1, gl.GL_DIFFUSE)
+        RenderHelper.__setColorBuffer(0.5, 0.5, 0.5, 1.0).glLightfv(gl.GL_LIGHT1, gl.GL_DIFFUSE)
         RenderHelper.__setColorBuffer(0.0, 0.0, 0.0, 1.0).glLightfv(gl.GL_LIGHT1, gl.GL_AMBIENT)
-        RenderHelper.__setColorBuffer(0.8, 0.8, 0.8, 1.0).glLightfv(gl.GL_LIGHT1, gl.GL_SPECULAR)
+        RenderHelper.__setColorBuffer(0.0, 0.0, 0.0, 1.0).glLightfv(gl.GL_LIGHT1, gl.GL_SPECULAR)
         gl.glShadeModel(gl.GL_SMOOTH)
-        RenderHelper.__setColorBuffer(x, x, x, 1.0).glLightModelfv(gl.GL_LIGHT_MODEL_AMBIENT)
+        RenderHelper.__setColorBuffer(0.5, 0.5, 0.5, 1.0).glLightModelfv(gl.GL_LIGHT_MODEL_AMBIENT)
 
     @staticmethod
     def __setColorBuffer(a, b, c, d):

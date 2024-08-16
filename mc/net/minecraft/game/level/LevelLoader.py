@@ -1,10 +1,20 @@
 from mc.net.minecraft.client.LoadingScreenRenderer import LoadingScreenRenderer
+from mc.net.minecraft.game.entity.animal.EntityPig import EntityPig
+from mc.net.minecraft.game.entity.animal.EntitySheep import EntitySheep
+from mc.net.minecraft.game.entity.misc.EntityItem import EntityItem
+from mc.net.minecraft.game.entity.monster.EntityCreeper import EntityCreeper
+from mc.net.minecraft.game.entity.monster.EntityGiantZombie import EntityGiantZombie
+from mc.net.minecraft.game.entity.monster.EntitySkeleton import EntitySkeleton
+from mc.net.minecraft.game.entity.monster.EntitySpider import EntitySpider
+from mc.net.minecraft.game.entity.monster.EntityZombie import EntityZombie
 from mc.net.minecraft.game.level.block.tileentity.TileEntityChest import TileEntityChest
 from mc.net.minecraft.game.level.block.Blocks import blocks
 from mc.net.minecraft.game.level.World import World
 
 from nbtlib import File
 from nbtlib.tag import Compound, ByteArray, List, String, Byte, Short, Long, Int
+
+import traceback
 
 class LevelLoader:
 
@@ -43,33 +53,61 @@ class LevelLoader:
         world.groundLevel = environmentTag['SurroundingGroundHeight'].real
         world.waterLevel = environmentTag['SurroundingWaterHeight'].real
         world.defaultFluid = environmentTag['SurroundingWaterType'].real
-        world.generate(width, height, length, bytearray(mapTag['Blocks']))
+        world.loadWorld(width, height, length, bytearray(mapTag['Blocks']),
+                        bytearray(mapTag['Data']))
         if self.__guiLoading:
             self.__guiLoading.displayLoadingString('Preparing entities..')
 
         for compound in entityTag:
-            entityType = str(compound['id'])
-            entity = self._loadEntity(world, entityType)
-            if entity:
-                entity.readFromNBT(compound)
-                world.spawnEntityInWorld(entity)
+            try:
+                entityType = str(compound['id'])
+                entity = self._loadEntity(world, entityType)
+                if entity:
+                    entity.readFromNBT(compound)
+                    world.spawnEntityInWorld(entity)
+                else:
+                    print(f'Skipping unknown entity id "{entityType}"')
+            except Exception as e:
+                print('Error reading entity')
+                print(traceback.format_exc())
 
         tileTag = levelTag['TileEntities']
         for compound in tileTag:
-            pos = compound['Pos'].real
-            entityType = str(compound['id'])
-            chest = TileEntityChest() if entityType == 'Chest' else None
-            if chest:
-                chest.readFromNBT(compound)
-                x = pos % 1024
-                y = (pos >> 10) % 1024
-                z = (pos >> 20) % 1024
-                world.setBlockTileEntity(x, y, z, chest)
+            try:
+                pos = compound['Pos'].real
+                entityType = str(compound['id'])
+                chest = TileEntityChest() if entityType == 'Chest' else None
+                if chest:
+                    chest.readFromNBT(compound)
+                    x = pos % 1024
+                    y = (pos >> 10) % 1024
+                    z = (pos >> 20) % 1024
+                    world.setBlockTileEntity(x, y, z, chest)
+                else:
+                    print(f'Skipping unknown tile entity id "{entityType}"')
+            except Exception as e:
+                print('Error reading tileentity')
+                print(traceback.format_exc())
 
         return world
 
     def _loadEntity(self, world, entityId):
-        return None
+        if entityId == 'Pig':
+            return EntityPig(world)
+        elif entityId == 'Sheep':
+            return EntitySheep(world)
+        elif entityId == 'Creeper':
+            return EntityCreeper(world)
+        elif entityId == 'Skeleton':
+            return EntitySkeleton(world)
+        elif entityId == 'Spider':
+            return EntitySpider(world)
+        elif entityId == 'Zombie':
+            return EntityZombie(world)
+        elif entityId == 'Giant':
+            return EntityGiantZombie(world)
+        elif entityId == 'Item':
+            return EntityItem(world)
 
     def save(self, world, file):
         if self.__guiLoading:

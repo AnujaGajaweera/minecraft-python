@@ -2,7 +2,8 @@ from mc.net.minecraft.game.level.block.Blocks import blocks
 from mc.net.minecraft.game.level.material.Material import Material
 from mc.net.minecraft.game.physics.Vec3D import Vec3D
 from mc.net.minecraft.game.physics.MovingObjectPosition import MovingObjectPosition
-from mc.net.minecraft.client.render.Frustum import Frustum
+from mc.net.minecraft.client.render.camera.IsomCamera import IsomCamera
+from mc.net.minecraft.client.render.camera.Frustum import Frustum
 from mc.net.minecraft.client.render.ItemRenderer import ItemRenderer
 from mc.net.minecraft.client.render.RenderBlocks import RenderBlocks
 from mc.net.minecraft.client.render.Tessellator import tessellator
@@ -49,13 +50,12 @@ class EntityRenderer:
     def __init__(self, minecraft):
         self.__mc = minecraft
         self.itemRenderer = ItemRenderer(self.__mc)
-        self.__frustum = Frustum()
 
     def updateRenderer(self):
         self.__prevFogColor = self.__fogColor
-        light = self.__mc.theWorld.getBlockLightValue(int(self.__mc.thePlayer.posX),
-                                                      int(self.__mc.thePlayer.posY),
-                                                      int(self.__mc.thePlayer.posZ))
+        light = self.__mc.theWorld.getBrightness(int(self.__mc.thePlayer.posX),
+                                                 int(self.__mc.thePlayer.posY),
+                                                 int(self.__mc.thePlayer.posZ))
         d = (3 - self.__mc.options.renderDistance) / 3.0
         light = light * (1.0 - d) + d
         self.__fogColor += (light - self.__fogColor) * 0.1
@@ -143,7 +143,7 @@ class EntityRenderer:
 
         if self.__mc.currentScreen:
             gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
-            self.__mc.currentScreen.drawScreen(xMouse, yMouse)
+            self.__mc.currentScreen.drawScreen(xMouse, yMouse, alpha)
 
     def grabLargeScreenshot(self):
         self.__mc.loadingScreen.displayProgressMessage('Grabbing large screenshot')
@@ -188,7 +188,7 @@ class EntityRenderer:
                             gl.glTranslatef(-self.__mc.theWorld.width / 2.0,
                                             -self.__mc.theWorld.height / 2.0,
                                             -self.__mc.theWorld.length / 2.0)
-                            frustum = Frustum().init()
+                            frustum = IsomCamera()
                             self.__mc.renderGlobal.clipRenderersByFrustum(frustum)
                             self.__mc.renderGlobal.updateRenderers(self.__mc.thePlayer)
                             self.__setupFog()
@@ -370,14 +370,15 @@ class EntityRenderer:
                 (self.__mc.thePlayer.posZ - self.__mc.thePlayer.prevPosZ) * alpha
             gl.glTranslatef(-x, -y, -z)
 
-            self.__frustum.init()
-            self.__mc.renderGlobal.clipRenderersByFrustum(self.__frustum)
+            frustum = Frustum(self.__mc.thePlayer, self.__farPlaneDistance, alpha)
+            self.__mc.renderGlobal.clipRenderersByFrustum(frustum)
             self.__mc.renderGlobal.updateRenderers(self.__mc.thePlayer)
 
             self.__setupFog()
             gl.glEnable(gl.GL_FOG)
             gl.glBindTexture(gl.GL_TEXTURE_2D,
                              self.__mc.renderEngine.getTexture('terrain.png'))
+            RenderHelper.disableStandardItemLighting()
             self.__mc.renderGlobal.sortAndRender(self.__mc.thePlayer, 0)
             if self.__mc.theWorld.isSolid(self.__mc.thePlayer.posX,
                                           self.__mc.thePlayer.posY,
@@ -385,7 +386,7 @@ class EntityRenderer:
                 x = int(self.__mc.thePlayer.posX)
                 y = int(self.__mc.thePlayer.posY)
                 z = int(self.__mc.thePlayer.posZ)
-                renderBlocks = RenderBlocks(tessellator, self.__mc.theWorld)
+                renderBlocks = RenderBlocks(self.__mc.theWorld)
 
                 for xx in range(x - 1, x + 2):
                     for yy in range(y - 1, y + 2):
@@ -398,7 +399,7 @@ class EntityRenderer:
 
             RenderHelper.enableStandardItemLighting()
             self.__mc.renderGlobal.renderEntities(self.__orientCamera(alpha),
-                                                  self.__frustum, alpha)
+                                                  frustum, alpha)
             self.__mc.effectRenderer.renderLitParticles(alpha)
             RenderHelper.disableStandardItemLighting()
             self.__setupFog()
@@ -509,7 +510,7 @@ class EntityRenderer:
             self.itemRenderer.renderItemInFirstPerson(alpha)
             gl.glPopMatrix()
 
-            self.itemRenderer.renderInMaterial(alpha)
+            self.itemRenderer.renderOverlays(alpha)
             self.__hurtCameraEffect(alpha)
             if self.__mc.options.viewBobbing:
                 self.__setupViewBobbing(alpha)
@@ -594,7 +595,7 @@ class EntityRenderer:
                 gl.glFogf(gl.GL_FOG_DENSITY, 2.0)
         else:
             gl.glFogi(gl.GL_FOG_MODE, gl.GL_LINEAR)
-            gl.glFogf(gl.GL_FOG_START, 0.0)
+            gl.glFogf(gl.GL_FOG_START, self.__farPlaneDistance / 4.0)
             gl.glFogf(gl.GL_FOG_END, self.__farPlaneDistance)
 
         gl.glEnable(gl.GL_COLOR_MATERIAL)

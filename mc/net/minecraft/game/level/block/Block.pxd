@@ -26,17 +26,19 @@ cdef class Block:
     cpdef int getRenderType(self)
     cdef float getBlockBrightness(self, World world, int x, int y, int z)
     cpdef bint shouldSideBeRendered(self, World world, int x, int y, int z, int layer)
-    cpdef int getBlockTextureFromSideAndMetadata(self, World world, int x, int y, int z, int layer)
-    cpdef int getBlockTexture(self, int face)
+    cpdef int getBlockTexture(self, World world, int x, int y, int z, int layer)
+    cpdef int getBlockTextureFromSideAndMetadata(self, int layer, int metadata)
+    cpdef int getBlockTextureFromSide(self, int face)
     cpdef bint isOpaqueCube(self)
     cpdef bint isCollidable(self)
-    cpdef void updateTick(self, World world, int x, int y, int z, Random random) except *
+    cpdef updateTick(self, World world, int x, int y, int z, Random random)
     cpdef void randomDisplayTick(self, World world, int x, int y, int z, Random random) except *
     cpdef void onNeighborBlockChange(self, World world, int x, int y, int z, int blockType) except *
     cdef int tickRate(self)
     cpdef int quantityDropped(self, Random random)
-    cpdef int idDropped(self)
-    cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z, float chance)
+    cpdef int idDropped(self, int metadata)
+    cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z,
+                                   int metadata, float chance)
     cdef float getExplosionResistance(self)
     cdef collisionRayTrace(self, World world, int x, int y, int z, v0, v1)
     cdef bint __isVecInsideYZBounds(self, vec)

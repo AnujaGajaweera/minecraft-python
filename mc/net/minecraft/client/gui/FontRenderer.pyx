@@ -3,6 +3,7 @@
 cimport cython
 
 from mc.net.minecraft.client.render.Tessellator import tessellator
+from mc.JavaUtils import BufferUtils
 from mc import Resources
 from pyglet import gl
 
@@ -10,10 +11,10 @@ from pyglet import gl
 cdef class FontRenderer:
 
     def __init__(self, settings, name, textures):
-        cdef int w, h, i, xt, yt, xPixel, yPixel, pixel
+        cdef int w, h, i, xt, yt, xPixel, yPixel, pixel, x, y, col, r, g, b, ar
         cdef bint emptyColumn
 
-        self.__options = settings
+        self.__buffer = BufferUtils.createIntBuffer(1024)
         texture = Resources.textures[name + '1']
         w = texture[0]
         h = texture[1]
@@ -45,6 +46,40 @@ cdef class FontRenderer:
             self.__charWidth[i] = x
 
         self.__fontTextureName = textures.getTexture(name + '2')
+        self.__fontDisplayLists = gl.glGenLists(288)
+        t = tessellator
+        for i in range(256):
+            gl.glNewList(self.__fontDisplayLists + i, gl.GL_COMPILE)
+            t.startDrawingQuads()
+            x = i % 16 << 3
+            y = i // 16 << 3
+            t.addVertexWithUV(0.0, 7.99, 0.0, x / 128.0, (y + 7.99) / 128.0)
+            t.addVertexWithUV(7.99, 7.99, 0.0, (x + 7.99) / 128.0, (y + 7.99) / 128.0)
+            t.addVertexWithUV(7.99, 0.0, 0.0, (x + 7.99) / 128.0, y / 128.0)
+            t.addVertexWithUV(0.0, 0.0, 0.0, x / 128.0, y / 128.0)
+            t.draw()
+            gl.glTranslatef(self.__charWidth[i], 0.0, 0.0)
+            gl.glEndList()
+
+        i = 0
+        while i < 32:
+            col = (i & 8) << 3
+            b = (i & 1) * 191 + col
+            g = ((i & 2) >> 1) * 191 + col
+            r = ((i & 4) >> 2) * 191 + col
+            if settings.anaglyph:
+                ar = (r * 30 + g * 59 + b * 11) // 100
+                g = (r * 30 + g * 70) // 100
+                b = (r * 30 + b * 70) // 100
+                r = ar
+
+            if i >= 16:
+                r //= 4
+                g //= 4
+                b //= 4
+
+            gl.glColor4f(r / 255.0, g / 255.0, b / 255.0, 1.0)
+            i += 3
 
     def drawStringWithShadow(self, str string, int x, int y, int color):
         self.__renderString(string, x + 1, y + 1, color, True)
@@ -54,7 +89,8 @@ cdef class FontRenderer:
         self.__renderString(string, x, y, color, False)
 
     cdef __renderString(self, str string, int x, int y, int color, bint darken=False):
-        cdef int xo, i, cc, br, r, g, b, ix, iy
+        cdef float r, g, b
+        cdef int i, cc
 
         if string is None:
             return
@@ -63,52 +99,41 @@ cdef class FontRenderer:
             color = (color & 0xFCFCFC) >> 2
 
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.__fontTextureName)
-        t = tessellator
-        t.startDrawingQuads()
-        t.setColorOpaque_I(color)
-        xo = 0
+        r = (color >> 16 & 255) / 255.0
+        g = (color >> 8 & 255) / 255.0
+        b = (color & 255) / 255.0
+        gl.glColor4f(r, g, b, 1.0)
+        self.__buffer.clear()
+        gl.glPushMatrix()
+        gl.glTranslatef(x, y, 0.0)
         i = 0
         while i < len(string):
-            if string[i] == '&' and len(string) > i + 1:
+            while string[i] == '&' and len(string) > i + 1:
                 cc = '0123456789abcdef'.index(string[i + 1])
-                if cc < 0:
+                if cc < 0 or cc > 15:
                     cc = 15
 
-                br = (cc & 8) << 3
-                r = ((cc & 4) >> 2) * 191 + br
-                g = ((cc & 2) >> 1) * 191 + br
-                b = (cc & 1) * 191 + br
-                color = r
-                if self.__options.anaglyph:
-                    r = (color * 30 + g * 59 + b * 11) // 100
-                    g = (color * 30 + g * 70) // 100
-                    b = (color * 30 + b * 70) // 100
+                self.__buffer.put(
+                    self.__fontDisplayLists + 256 + cc + (16 if darken else 0)
+                )
+                if self.__buffer.remaining() == 0:
+                    self.__buffer.flip()
+                    self.__buffer.glCallLists()
+                    self.__buffer.clear()
 
-                color = r << 16 | g << 8 | b
                 i += 2
-                if i >= len(string):
-                    break
 
-                if darken:
-                    color = (color & 0xFCFCFC) >> 2
+            self.__buffer.put(self.__fontDisplayLists + ord(string[i]))
+            if self.__buffer.remaining() == 0:
+                self.__buffer.flip()
+                self.__buffer.glCallLists()
+                self.__buffer.clear()
 
-                t.setColorOpaque_I(color)
-
-            ix = ord(string[i]) % ord('\020') << 3
-            iy = ord(string[i]) // ord('\020') << 3
-            t.addVertexWithUV(x + xo, y + 7.99, 0.0,
-                              ix / 128.0, (iy + 7.99) / 128.0)
-            t.addVertexWithUV(x + xo + 7.99, y + 7.99, 0.0,
-                              (ix + 7.99) / 128.0, (iy + 7.99) / 128.0)
-            t.addVertexWithUV(x + xo + 7.99, y, 0.0,
-                              (ix + 7.99) / 128.0, iy / 128.0)
-            t.addVertexWithUV(x + xo, y, 0.0,
-                              ix / 128.0, iy / 128.0)
-
-            xo += self.__charWidth[ord(string[i])]
             i += 1
 
-        t.draw()
+        self.__buffer.flip()
+        self.__buffer.glCallLists()
+        gl.glPopMatrix()
 
     def getStringWidth(self, str string):
         cdef int length, i

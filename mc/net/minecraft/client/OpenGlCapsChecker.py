@@ -1,2 +1,2 @@
 class OpenGlCapsChecker:
-    cap = False
+    pass

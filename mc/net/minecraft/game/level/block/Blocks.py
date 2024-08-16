@@ -2,12 +2,14 @@ from mc.net.minecraft.game.level.block.Block import Block
 from mc.net.minecraft.game.level.block.BlockSand import BlockSand
 from mc.net.minecraft.game.level.block.BlockFire import BlockFire
 from mc.net.minecraft.game.level.block.BlockFlowing import BlockFlowing
+from mc.net.minecraft.game.level.block.BlockFarmland import BlockFarmland
 from mc.net.minecraft.game.level.block.BlockStationary import BlockStationary
 from mc.net.minecraft.game.level.block.BlockBookshelf import BlockBookshelf
 from mc.net.minecraft.game.level.block.BlockWorkbench import BlockWorkbench
 from mc.net.minecraft.game.level.block.BlockSponge import BlockSponge
 from mc.net.minecraft.game.level.block.BlockMushroom import BlockMushroom
 from mc.net.minecraft.game.level.block.BlockChest import BlockChest
+from mc.net.minecraft.game.level.block.BlockCrops import BlockCrops
 from mc.net.minecraft.game.level.block.BlockFlower import BlockFlower
 from mc.net.minecraft.game.level.block.BlockGlass import BlockGlass
 from mc.net.minecraft.game.level.block.BlockGrass import BlockGrass
@@ -81,7 +83,7 @@ class Blocks:
 
         self.wood = BlockLog(self, 17).setHardness(1.0)
         self.wood.stepSound = self.soundWoodFootstep
-        self.leaves = BlockLeaves(self, 18, 22).setHardness(0.2).setLightOpacity(1)
+        self.leaves = BlockLeaves(self, 18, 52).setHardness(0.2).setLightOpacity(1)
         self.leaves.stepSound = self.soundGrassFootstep
 
         self.sponge = BlockSponge(self, 19).setHardness(0.6)
@@ -131,9 +133,9 @@ class Blocks:
         self.mushroomRed = BlockMushroom(self, 40, 28).setHardness(0.0)
         self.mushroomRed.stepSound = self.soundGrassFootstep
 
-        self.blockGold = BlockOreBlock(self, 41, 40).setHardness(3.0).setResistance(10.0)
+        self.blockGold = BlockOreBlock(self, 41, 39).setHardness(3.0).setResistance(10.0)
         self.blockGold.stepSound = self.soundMetalFootstep
-        self.blockSteel = BlockOreBlock(self, 42, 39).setHardness(5.0).setResistance(10.0)
+        self.blockSteel = BlockOreBlock(self, 42, 38).setHardness(5.0).setResistance(10.0)
         self.blockSteel.stepSound = self.soundMetalFootstep
 
         self.stairDouble = BlockStep(self, 43, True).setHardness(2.0).setResistance(10.0)
@@ -175,10 +177,15 @@ class Blocks:
 
         self.oreDiamond = BlockOre(self, 56, 50).setHardness(3.0).setResistance(5.0)
         self.oreDiamond.stepSound = self.soundStoneFootstep
-        self.blockDiamond = BlockOreBlock(self, 57, 104).setHardness(5.0).setResistance(10.0)
+        self.blockDiamond = BlockOreBlock(self, 57, 40).setHardness(5.0).setResistance(10.0)
         self.blockDiamond.stepSound = self.soundMetalFootstep
 
         self.workbench = BlockWorkbench(self, 58).setHardness(2.5)
         self.workbench.stepSound = self.soundWoodFootstep
+
+        self.crops = BlockCrops(self, 59, 88).setHardness(0.0)
+        self.crops.stepSound = self.soundGrassFootstep
+        self.tilledField = BlockFarmland(self, 60).setHardness(0.6)
+        self.tilledField.stepSound = self.soundGravelFootstep
 
 blocks = Blocks()

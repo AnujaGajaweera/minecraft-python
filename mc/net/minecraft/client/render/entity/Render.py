@@ -8,10 +8,10 @@ class Render:
 
     def __init__(self):
         ModelBiped()
-        RenderBlocks(tessellator)
+        RenderBlocks()
         self._renderManager = None
         self._shadowSize = 0.0
-        self._shadowOpaque = 0.0
+        self._shadowOpaque = 1.0
 
     def doRender(self, entity, xd, yd, zd, yaw, a):
         pass
@@ -75,14 +75,17 @@ class Render:
                 self._renderManager.renderEngine.setClampTexture(False)
                 gl.glDepthMask(False)
 
-                for xx in range(int(xd - self._shadowSize), int(xd + self._shadowSize + 1)):
+                for xx in range(int(xd - self._shadowSize),
+                                int(xd + self._shadowSize + 1)):
                     for yy in range(int(yd - 2.0), int(yd + 1)):
-                        for zz in range(int(zd - self._shadowSize), int(zd + self._shadowSize + 1)):
+                        for zz in range(int(zd - self._shadowSize),
+                                        int(zd + self._shadowSize + 1)):
                             blockId = self._renderManager.worldObj.getBlockId(xx, yy - 1, zz)
-                            if blockId > 0 and self._renderManager.worldObj.isHalfLit(xx, yy, zz):
+                            if blockId > 0 and \
+                               self._renderManager.worldObj.isHalfLit(xx, yy, zz):
                                 block = blocks.blocksList[blockId]
                                 t = tessellator
-                                br = self._renderManager.worldObj.getBlockLightValue(xx, yy, zz)
+                                br = self._renderManager.worldObj.getBrightness(xx, yy, zz)
                                 r0 = (1.0 - (yd - yy) / 2.0) * 0.5 * br
                                 if r0 >= 0.0:
                                     gl.glColor4f(1.0, 1.0, 1.0, r0)

@@ -1,12 +1,11 @@
 # cython: language_level=3
 
 from mc.net.minecraft.game.entity.Entity cimport Entity
-from mc.net.minecraft.game.entity.AILiving cimport AILiving
 
 cdef class EntityLiving(Entity):
 
     cdef:
-        public int heartsHalvesLife
+        int __heartsHalvesLife
         public float renderYawOffset
         public float prevRenderYawOffset
         float __prevRotationYawHead
@@ -18,13 +17,19 @@ cdef class EntityLiving(Entity):
         public int maxHurtTime
         public float attackedAtYaw
         public int deathTime
-        int __attackTime
+        public int attackTime
         public float prevCameraPitch
         public float cameraPitch
-        public AILiving _entityAI
-        public float moveStrafing
-        public float moveForward
-        public float randomYawVelocity
+        public float prevLimbYaw
+        public float limbYaw
+        public float limbSwing
+        int __entityAge
+        public float _moveStrafing
+        public float _moveForward
+        float __randomYawVelocity
+        public bint _isJumping
+        float __defaultPitch
+        public float _moveSpeed
 
     cpdef float _getEyeHeight(self)
     cdef _fall(self, float d)

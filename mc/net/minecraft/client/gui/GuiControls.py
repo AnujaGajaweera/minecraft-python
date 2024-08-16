@@ -37,7 +37,8 @@ class GuiControls(GuiScreen):
         else:
             super()._keyTyped(key, char, motion)
 
-    def drawScreen(self, xm, ym):
+    def drawScreen(self, xm, ym, renderPartialTicks):
+        self.drawDefaultBackground()
         self._drawGradientRect(0, 0, self.width, self.height, 1610941696, -1607454624)
         self.drawCenteredString(self._fontRenderer, self.__screenTitle, self.width // 2, 20, 16777215)
-        super().drawScreen(xm, ym)
+        super().drawScreen(xm, ym, renderPartialTicks)

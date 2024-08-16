@@ -3,6 +3,7 @@
 cimport cython
 
 from mc.net.minecraft.game.level.EntityMap cimport EntityMap
+from mc.net.minecraft.game.level.path.Pathfinder cimport Pathfinder
 from mc.net.minecraft.game.physics.AxisAlignedBB cimport AxisAlignedBB
 from mc.JavaUtils cimport Random
 
@@ -67,6 +68,10 @@ cdef class World:
 
         public float skyBrightness
 
+        public Pathfinder pathFinder
+
+        public int difficultySetting
+
         int __size
 
         short[1048576] __floodFillCounters
@@ -78,9 +83,10 @@ cdef class World:
         bint[256] __isBlockNormal
         bint[256] __isTickOnLoad
 
-    cdef findSpawn(self)
+    cdef __findSpawn(self)
+    cdef __calculateLighting(self)
     cdef void __updateSkylight(self, int x0, int y0, int x1, int y1) except *
-    cdef void __updateLight(self, int x0, int y0, int z0, int x1, int y1, int z1)
+    cdef void __updateBlockLight(self, int x0, int y0, int z0, int x1, int y1, int z1)
     cpdef swap(self, int x0, int y0, int z0, int x1, int y1, int z1)
     cpdef bint setBlock(self, int x, int y, int z, int blockType)
     cpdef bint setBlockWithNotify(self, int x, int y, int z, int blockType)
@@ -104,9 +110,10 @@ cdef class World:
     cdef inline bint __isBlockOpaque(self, float x, float y, float z)
     cpdef __getFirstUncoveredBlock(self, int x, int z)
     cpdef setSpawnLocation(self, int x, int y, int z, float rotationYaw)
-    cpdef inline float getBlockLightValue(self, int x, int y, int z)
-    cdef inline char getBlockBrightness(self, int x, int y, int z)
-    cdef inline char __getBlockMetadata(self, int x, int y, int z)
+    cpdef inline float getBrightness(self, int x, int y, int z)
+    cdef inline char __getBlockLightValue(self, int x, int y, int z)
+    cpdef inline char getBlockMetadata(self, int x, int y, int z)
+    cpdef setBlockMetadata(self, int x, int y, int z, int metadata)
     cpdef inline bint isWater(self, int x, int y, int z)
     cpdef bint growTrees(self, int x, int y, int z)
     cdef float __getBlockDensity(self, vec, AxisAlignedBB box)

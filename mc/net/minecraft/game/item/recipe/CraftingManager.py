@@ -1,12 +1,12 @@
 from mc.net.minecraft.game.item.Item import Item
 from mc.net.minecraft.game.item.Items import items
 from mc.net.minecraft.game.item.ItemStack import ItemStack
-from mc.net.minecraft.game.item.recipe.ShapedRecipes import ShapedRecipes
+from mc.net.minecraft.game.item.recipe.CraftingRecipe import CraftingRecipe
 from mc.net.minecraft.game.item.recipe.RecipesTools import RecipesTools
 from mc.net.minecraft.game.item.recipe.RecipesWeapons import RecipesWeapons
 from mc.net.minecraft.game.item.recipe.RecipesIngots import RecipesIngots
-from mc.net.minecraft.game.item.recipe.RecipesBowl import RecipesBowl
-from mc.net.minecraft.game.item.recipe.RecipesBlocks import RecipesBlocks
+from mc.net.minecraft.game.item.recipe.RecipesFood import RecipesFood
+from mc.net.minecraft.game.item.recipe.RecipesCrafting import RecipesCrafting
 from mc.net.minecraft.game.item.recipe.RecipeSorter import RecipeSorter
 from mc.net.minecraft.game.level.block.Block import Block
 from mc.net.minecraft.game.level.block.Blocks import blocks
@@ -29,14 +29,14 @@ class CraftingManager:
         RecipesTools().addRecipes(self)
         RecipesWeapons().addRecipes(self)
         RecipesIngots().addRecipes(self)
-        RecipesBowl()
+        RecipesFood()
         self.addRecipe(ItemStack(items.bowlSoup),
                        ('Y', 'X', '#', ord('X'), blocks.mushroomBrown, ord('Y'),
                         blocks.mushroomRed, ord('#'), items.bowlEmpty))
         self.addRecipe(ItemStack(items.bowlSoup),
                        ('Y', 'X', '#', ord('X'), blocks.mushroomRed, ord('Y'),
                         blocks.mushroomBrown, ord('#'), items.bowlEmpty))
-        RecipesBlocks()
+        RecipesCrafting()
         self.addRecipe(ItemStack(blocks.chest),
                        ('###', '# #', '###', ord('#'), blocks.planks))
         self.addRecipe(ItemStack(blocks.workbench),
@@ -60,6 +60,8 @@ class CraftingManager:
                        ('X', '#', ord('X'), items.coal, ord('#'), items.stick))
         self.addRecipe(ItemStack(items.bowlEmpty, 4),
                        ('# #', ' # ', ord('#'), blocks.planks))
+        self.addRecipe(ItemStack(items.bread, 1),
+                       ('###', '###', ord('#'), items.wheat))
         self.__recipes = sorted(
             self.__recipes,
             key=cmp_to_key(RecipeSorter(self).compare)
@@ -99,12 +101,12 @@ class CraftingManager:
                 recipeItems[i] = -1
 
         self.__recipes.append(
-            ShapedRecipes(recipeWidth, recipeHeight, recipeItems, stack)
+            CraftingRecipe(recipeWidth, recipeHeight, recipeItems, stack)
         )
 
     def findMatchingRecipe(self, craftItems):
         for recipe in self.__recipes:
-            if recipe.matches(craftItems):
-                return recipe.getCraftingResult()
+            if recipe.matchRecipe(craftItems):
+                return recipe.createResult()
 
         return None

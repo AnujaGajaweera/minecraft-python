@@ -27,7 +27,7 @@ class GuiGameOver(GuiScreen):
         elif button.id == 2 and self.mc.session:
             self.mc.displayGuiScreen(GuiLoadLevel(self))
 
-    def drawScreen(self, xm, ym):
+    def drawScreen(self, xm, ym, renderPartialTicks):
         self._drawGradientRect(0, 0, self.width, self.height, 0x60500000, -1602211792)
         gl.glPushMatrix()
         gl.glScalef(2.0, 2.0, 2.0)
@@ -35,4 +35,7 @@ class GuiGameOver(GuiScreen):
         gl.glPopMatrix()
         self.drawCenteredString(self._fontRenderer, 'Score: &e' + str(self.mc.thePlayer.getScore()),
                                 self.width // 2, 100, 0xFFFFFF)
-        super().drawScreen(xm, ym)
+        super().drawScreen(xm, ym, renderPartialTicks)
+
+    def doesGuiPauseGame(self):
+        return False

@@ -3,12 +3,14 @@ from mc.net.minecraft.game.item.ItemStack import ItemStack
 from mc.net.minecraft.game.level.block.Blocks import blocks
 
 class RecipesTools:
-    __recipePatterns = (('XXX', ' # ', ' # '), ('X', '#', '#'), ('XX', 'X#', ' #'))
+    __recipePatterns = (('XXX', ' # ', ' # '), ('X', '#', '#'),
+                        ('XX', 'X#', ' #'), ('XX', ' #', ' #'))
     __recipeItems = (
         (blocks.planks, blocks.cobblestone, items.ingotIron, items.diamond, items.ingotGold),
         (items.pickaxeWood, items.pickaxeStone, items.pickaxeSteel, items.pickaxeDiamond, items.pickaxeGold),
         (items.shovelWood, items.shovelStone, items.shovel, items.shovelDiamond, items.shovelGold),
-        (items.axeWood, items.axeStone, items.axeSteel, items.axeDiamond, items.axeGold)
+        (items.axeWood, items.axeStone, items.axeSteel, items.axeDiamond, items.axeGold),
+        (items.hoeWood, items.hoeStone, items.hoeSteel, items.hoeDiamond, items.hoeGold)
     )
 
     def addRecipes(self, craftingManager):

@@ -292,7 +292,7 @@ cdef class ByteBuffer(Buffer):
 
     def __init__(self, capacity):
         Buffer.__init__(self, capacity)
-        self.__array = np.zeros(capacity, dtype=np.ubyte)
+        self._array = np.zeros(capacity, dtype=np.ubyte)
 
     def __setitem__(self, key, value):
         cdef int i, k, idx
@@ -302,28 +302,37 @@ cdef class ByteBuffer(Buffer):
                 raise ValueError('Slice assignment size does not match value size')
 
             for i, idx in enumerate(indices):
-                self.__array[idx] = value[i]
+                self._array[idx] = value[i]
         elif isinstance(key, int):
             k = key
             if k < 0 or k >= self._capacity:
                 raise IndexError
 
-            self.__array[k] = <unsigned char>(value & 0xFF)
+            self._array[k] = <unsigned char>(value & 0xFF)
 
     def __getitem__(self, key):
         cdef int i, k
         if isinstance(key, slice):
-            return [self.__array[i] for i in range(*key.indices(self._capacity))]
+            return [self._array[i] for i in range(*key.indices(self._capacity))]
         elif isinstance(key, int):
             k = key
             if k < 0 or k >= self._capacity:
                 raise IndexError
 
-            return self.__array[k]
+            return self._array[k]
 
     cpdef inline put(self, unsigned char value):
         self[self.nextPutIndex()] = value
         return self
+
+    cdef inline putIntB(self, int bi, int x):
+        self._array[bi + 3] = <char>(x >> 24)
+        self._array[bi + 2] = <char>(x >> 16)
+        self._array[bi + 1] = <char>(x >> 8)
+        self._array[bi    ] = <char>x
+
+    cdef inline putFloatB(self, int bi, float x):
+        self.putIntB(bi, floatToRawIntBits(x))
 
     cpdef inline unsigned char get(self):
         return self[self.nextGetIndex()]
@@ -347,8 +356,9 @@ cdef class ByteBuffer(Buffer):
         return self
 
     cdef inline __getDataPtr(self):
-        if not self.__dataPtr:
-            self.__dataPtr = np.asarray(self.__array).ctypes.data_as(ctypes.POINTER(ctypes.c_ubyte))
+        if not self.__dataPtr or self._position != self.__lastPos:
+            self.__dataPtr = np.asarray(self._array)[self._position:].ctypes.data_as(ctypes.POINTER(ctypes.c_ubyte))
+            self.__lastPos = self._position
 
         return self.__dataPtr
 
@@ -365,6 +375,20 @@ cdef class ByteBuffer(Buffer):
 
     def glReadPixels(self, int x, int y, int width, int height, int format, int type):
         gl.glReadPixels(x, y, width, height, format, type, self.__getDataPtr())
+
+    def glColorPointer(self, int size, int stride):
+        gl.glColorPointer(size, gl.GL_UNSIGNED_BYTE, stride, self.__getDataPtr())
+
+    def glBufferDataARB(self, int target, int usage):
+        gl.glBufferDataARB(target, self.capacity(), self.__getDataPtr(), usage)
+
+    cdef IntBuffer asIntBuffer(self):
+        cdef int size = self.remaining() >> 2
+        return ByteBufferAsIntBuffer(self, -1, 0, size, size, self.position())
+
+    cdef FloatBuffer asFloatBuffer(self):
+        cdef int size = self.remaining() >> 2
+        return ByteBufferAsFloatBuffer(self, -1, 0, size, size, self.position())
 
 cdef class IntBuffer(Buffer):
 
@@ -399,8 +423,8 @@ cdef class IntBuffer(Buffer):
 
             return self.__array[k]
 
-    cpdef inline put(self, int value):
-        self[self.nextPutIndex()] = value
+    cpdef put(self, int value):
+        self.__array[self.nextPutIndex()] = value
         return self
 
     cdef putInts(self, int[:] src, int offset, int length):
@@ -412,33 +436,46 @@ cdef class IntBuffer(Buffer):
         if length > rem:
             raise Exception
 
-        cdef int[:] dest = self.__array[self._position + offset:self._position + offset + length]
-        dest[:length] = src[:length]
-
-        self._position += length
+        for i in range(offset, offset + length):
+            self.put(src[i])
 
         return self
 
-    cpdef inline int get(self):
+    cpdef int get(self):
         return self[self.nextGetIndex()]
 
-    cpdef inline int getAt(self, int idx):
+    cpdef int getAt(self, int idx):
         return self[self.checkIndex(idx)]
 
-    cdef inline __getDataPtr(self):
-        if not self.__dataPtr:
-            self.__dataPtr = np.asarray(self.__array).ctypes.data_as(ctypes.POINTER(ctypes.c_int))
+    cdef _getDataPtr(self):
+        if not self._dataPtr or self._position != self._lastPos:
+            self._dataPtr = np.asarray(self.__array)[self._position << 2:].ctypes.data_as(ctypes.POINTER(ctypes.c_int))
+            self._lastPos = self._position
 
-        return self.__dataPtr
+        return self._dataPtr
 
-    def glCallLists(self, int n, int type):
-        gl.glCallLists(n, type, self.__getDataPtr())
+    def glCallLists(self):
+        gl.glCallLists(self.remaining(), gl.GL_INT, self._getDataPtr())
 
     def glDrawElements(self, int mode, int count, int type):
-        gl.glDrawElements(mode, count, type, self.__getDataPtr())
+        gl.glDrawElements(mode, count, type, self._getDataPtr())
 
     def glInterleavedArrays(self, int format, int stride):
-        gl.glInterleavedArrays(format, stride, self.__getDataPtr())
+        gl.glInterleavedArrays(format, stride, self._getDataPtr())
+
+    def glGenBuffersARB(self):
+        gl.glGenBuffersARB(self._getDataPtr())
+
+    def glGenQueriesARB(self):
+        return gl.glGenQueriesARB(
+            1, np.asarray(self.__array).ctypes.data_as(ctypes.POINTER(ctypes.c_uint))
+        )
+
+    def glGetInteger(self, int opt):
+        return gl.glGetIntegerv(gl.GL_QUERY_COUNTER_BITS, self._getDataPtr())
+
+    def glGetQueryObjectivARB(self, int id, int pname):
+        gl.glGetQueryObjectivARB(id, pname, self._getDataPtr())
 
 cdef class FloatBuffer(Buffer):
 
@@ -473,8 +510,8 @@ cdef class FloatBuffer(Buffer):
 
             return self.__array[k]
 
-    cpdef inline put(self, float value):
-        self[self.nextPutIndex()] = value
+    cpdef put(self, float value):
+        self.__array[self.nextPutIndex()] = value
         return self
 
     cdef putFloats(self, float* src, int offset, int length):
@@ -486,18 +523,15 @@ cdef class FloatBuffer(Buffer):
         if length > rem:
             raise Exception
 
-        cdef float[:] dest = self.__array[self._position + offset:self._position + offset + length]
-        for i in range(length):
-            dest[i] = src[i]
-
-        self._position += length
+        for i in range(offset, offset + length):
+            self.put(src[i])
 
         return self
 
-    cpdef inline float get(self):
+    cpdef float get(self):
         return self[self.nextGetIndex()]
 
-    cpdef inline float getAt(self, int idx):
+    cpdef float getAt(self, int idx):
         return self[self.checkIndex(idx)]
 
     def getBytes(self, b):
@@ -530,32 +564,71 @@ cdef class FloatBuffer(Buffer):
         self._position += size
         return self
 
-    cdef inline __getDataPtr(self):
-        if not self.__dataPtr:
-            self.__dataPtr = np.asarray(self.__array).ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+    cdef _getDataPtr(self):
+        if not self._dataPtr or self._position != self._lastPos:
+            self._dataPtr = np.asarray(self.__array)[self._position << 2:].ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+            self._lastPos = self._position
 
-        return self.__dataPtr
+        return self._dataPtr
 
     def glFogfv(self, int pname):
-        gl.glFogfv(pname, self.__getDataPtr())
+        gl.glFogfv(pname, self._getDataPtr())
 
     def glLightfv(self, int light, int pname):
-        gl.glLightfv(light, pname, self.__getDataPtr())
+        gl.glLightfv(light, pname, self._getDataPtr())
 
     def glLightModelfv(self, int pname):
-        gl.glLightModelfv(pname, self.__getDataPtr())
+        gl.glLightModelfv(pname, self._getDataPtr())
 
-    def glVertexPointer(self, int size, int type, int stride):
-        gl.glVertexPointer(size, type, stride, self.__getDataPtr())
+    def glVertexPointer(self, int size, int stride):
+        gl.glVertexPointer(size, gl.GL_FLOAT, stride, self._getDataPtr())
 
-    def glNormalPointer(self, int type, int stride):
-        gl.glNormalPointer(type, stride, self.__getDataPtr())
+    def glNormalPointer(self, int stride):
+        gl.glNormalPointer(gl.GL_FLOAT, stride, self._getDataPtr())
 
-    def glTexCoordPointer(self, int size, int type, int stride):
-        gl.glTexCoordPointer(size, type, stride, self.__getDataPtr())
+    def glTexCoordPointer(self, int size, int stride):
+        gl.glTexCoordPointer(size, gl.GL_FLOAT, stride, self._getDataPtr())
 
     def glMultMatrix(self):
-        gl.glMultMatrixf(self.__getDataPtr())
+        gl.glMultMatrixf(self._getDataPtr())
+
+cdef class ByteBufferAsIntBuffer(IntBuffer):
+
+    def __init__(self, ByteBuffer bb, int mark, int pos, int lim, int cap, int off):
+        IntBuffer.__init__(self, cap)
+        self.limit(lim)
+        self.position(pos)
+        self._bb = bb
+        self._offset = off
+
+    cpdef put(self, int value):
+        self._bb.putIntB((self.nextPutIndex() << 2) + self._offset, value)
+
+    cdef _getDataPtr(self):
+        if not self._dataPtr or self._position != self._lastPos:
+            self._dataPtr = np.asarray(self._bb._array)[self._position << 2:].ctypes.data_as(ctypes.POINTER(ctypes.c_int))
+            self._lastPos = self._position
+
+        return self._dataPtr
+
+cdef class ByteBufferAsFloatBuffer(FloatBuffer):
+
+    def __init__(self, ByteBuffer bb, int mark, int pos, int lim, int cap, int off):
+        FloatBuffer.__init__(self, cap)
+        self.limit(lim)
+        self.position(pos)
+        self._bb = bb
+        self._offset = off
+
+    cpdef put(self, float value):
+        self._bb.putFloatB((self.nextPutIndex() << 2) + self._offset, value)
+
+    cdef _getDataPtr(self):
+        if not self._dataPtr or self._position != self._lastPos:
+            self._dataPtr = np.asarray(self._bb._array)[self._position << 2:].ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+            self._lastPos = self._position
+
+        return self._dataPtr
 
 cdef class BufferUtils:
 

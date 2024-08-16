@@ -12,8 +12,9 @@ class PlayerControllerSP(PlayerController):
         self.__curBlockX = -1
         self.__curBlockY = -1
         self.__curBlockZ = -1
-        self.__curBlockDamage = 0
-        self.__prevBlockDamage = 0
+        self.__curBlockDamage = 0.0
+        self.__prevBlockDamage = 0.0
+        self.__blockDestroySoundCounter = 0.0
         self.__blockHitWait = 0
         self.__mobSpawner = None
 
@@ -38,6 +39,7 @@ class PlayerControllerSP(PlayerController):
 
     def sendBlockRemoved(self, x, y, z):
         block = self._mc.theWorld.getBlockId(x, y, z)
+        metadata = self._mc.theWorld.getBlockMetadata(x, y, z)
         change = super().sendBlockRemoved(x, y, z)
         stack = self._mc.thePlayer.inventory.getCurrentItem()
         if stack:
@@ -45,17 +47,17 @@ class PlayerControllerSP(PlayerController):
             if stack.stackSize == 0:
                 self._mc.thePlayer.displayGUIInventory()
         if change:
-            blocks.blocksList[block].dropBlockAsItem(self._mc.theWorld, x, y, z)
+            blocks.blocksList[block].dropBlockAsItem(self._mc.theWorld, x, y, z, metadata)
 
         return change
 
     def clickBlock(self, x, y, z):
         block = self._mc.theWorld.getBlockId(x, y, z)
-        if block > 0 and blocks.blocksList[block].blockStrength(self._mc.thePlayer) == 0:
+        if block > 0 and blocks.blocksList[block].blockStrength(self._mc.thePlayer) >= 1.0:
             self.sendBlockRemoved(x, y, z)
 
     def resetBlockRemoving(self):
-        self.__curBlockDamage = 0
+        self.__curBlockDamage = 0.0
         self.__blockHitWait = 0
 
     def sendBlockRemoving(self, x, y, z, sideHit):
@@ -70,34 +72,35 @@ class PlayerControllerSP(PlayerController):
                 return
 
             block = blocks.blocksList[block]
-            self.__prevBlockDamage = block.blockStrength(self._mc.thePlayer)
-            if self.__prevBlockDamage < 0:
-                self.__curBlockDamage %= 4
-                self.__prevBlockDamage = 99999999
-
-            if self.__curBlockDamage % 4 == 0 and block:
+            self.__curBlockDamage += block.blockStrength(self._mc.thePlayer)
+            if self.__blockDestroySoundCounter % 4.0 == 0.0 and block:
                 speed = (block.stepSound.soundVolume + 1.0) / 8.0
                 self._mc.sndManager.playSound(
-                    f'step.{block.stepSound.soundDir}', x + 0.5, y + 0.5, z + 0.5,
+                    f'step.{block.stepSound.sound}', x + 0.5, y + 0.5, z + 0.5,
                     speed, block.stepSound.soundPitch * 0.5
                 )
 
-            self.__curBlockDamage += 1
-            if self.__curBlockDamage == self.__prevBlockDamage + 1:
+            self.__blockDestroySoundCounter += 1
+            if self.__curBlockDamage >= 1.0:
                 self.sendBlockRemoved(x, y, z)
-                self.__curBlockDamage = 0
+                self.__curBlockDamage = 0.0
+                self.__prevBlockDamage = 0.0
+                self.__blockDestroySoundCounter = 0.0
                 self.__blockHitWait = 5
         else:
-            self.__curBlockDamage = 0
+            self.__curBlockDamage = 0.0
+            self.__prevBlockDamage = 0.0
+            self.__blockDestroySoundCounter = 0.0
             self.__curBlockX = x
             self.__curBlockY = y
             self.__curBlockZ = z
 
     def setPartialTime(self, damageTime):
-        if self.__curBlockDamage <= 0:
+        if self.__curBlockDamage <= 0.0:
             self._mc.renderGlobal.damagePartialTime = 0.0
         else:
-            self._mc.renderGlobal.damagePartialTime = (self.__curBlockDamage + damageTime - 1.0) / self.__prevBlockDamage
+            self._mc.renderGlobal.damagePartialTime = self.__prevBlockDamage + \
+                (self.__curBlockDamage - self.__prevBlockDamage) * damageTime
 
     def getBlockReachDistance(self):
         return 4.0
@@ -111,4 +114,5 @@ class PlayerControllerSP(PlayerController):
             self.__mobSpawner.spawnMob(size, world.playerEntity, None)
 
     def onUpdate(self):
+        self.__prevBlockDamage = self.__curBlockDamage
         self.__mobSpawner.spawnMobs()

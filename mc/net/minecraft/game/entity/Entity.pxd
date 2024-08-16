@@ -63,7 +63,7 @@ cdef class Entity:
     cdef _fall(self, float distance)
     cpdef bint handleWaterMovement(self)
     cpdef float _getEyeHeight(self)
-    cdef bint handleLavaMovement(self)
+    cpdef bint handleLavaMovement(self)
     cpdef moveFlying(self, float xa, float za, float speed)
     cpdef float getBrightness(self, float a)
     cdef applyEntityCollision(self, entity)

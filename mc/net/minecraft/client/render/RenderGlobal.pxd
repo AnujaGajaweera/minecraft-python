@@ -23,8 +23,24 @@ cdef class RenderGlobal:
 
         RenderBlocks __globalRenderBlocks
 
-        int[50000] __chunkBuffer
+        IntBuffer __glOcclusionQueryBase
+        bint __occlusionEnabled
+
         int __cloudOffsetX
+
+        int __countEntitiesTotal
+        int __countEntitiesRendered
+        int __countEntitiesHidden
+
+        int[50000] __chunkBuffer
+
+        IntBuffer __occlusionResult
+
+        int __renderersLoaded
+        int __renderersBeingClipped
+        int __renderersBeingOccluded
+        int __renderersBeingRendered
+
         float __prevSortX
         float __prevSortY
         float __prevSortZ
@@ -38,6 +54,8 @@ cdef class RenderGlobal:
         int __renderChunksTall
         int __renderChunksDeep
 
+    cdef __checkOcclusionQueryResult(self, int minChunk, int maxChunk)
+    cdef int __renderSortedRenderers(self, int minChunk, int maxChunk, int layer)
     cdef __markBlocksForUpdate(self, int x0, int y0, int z0, int x1, int y1, int z1)
     cdef markBlockAndNeighborsNeedsUpdate(self, int x, int y, int z)
     cdef markBlockRangeNeedsUpdate(self, int x0, int y0, int z0,

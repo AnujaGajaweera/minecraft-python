@@ -16,11 +16,15 @@ class ItemFlintAndSteel(Item):
         if sideHit == 4: x -= 1
         if sideHit == 5: x += 1
 
-        if x <= 0 or y <= 0 or z <= 0 or x >= world.width - 1 or y >= world.height - 1 or z >= world.length - 1:
-            return
+        if x <= 0 or y <= 0 or z <= 0 or x >= world.width - 1 or \
+           y >= world.height - 1 or z >= world.length - 1:
+            return False
 
         blockId = world.getBlockId(x, y, z)
         if blockId == 0:
+            world.playSoundAtPlayer(x + 0.5, y + 0.5, z + 0.5, 'fire.ignite', 1.0,
+                                    self._rand.nextFloat() * 0.4 + 0.8)
             world.setBlockWithNotify(x, y, z, blocks.fire.blockID)
 
         stack.damageItem(1)
+        return True

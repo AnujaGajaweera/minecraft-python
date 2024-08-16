@@ -27,7 +27,7 @@ class GuiNameLevel(GuiScreen):
             if button.id == 0 and len(self.__name.strip()) > 1:
                 self.__name.strip()
                 self.mc.displayGuiScreen(None)
-                self.mc.grabMouse()
+                self.mc.setIngameFocus()
             elif button.id == 1:
                 self.mc.displayGuiScreen(self.__parent)
 
@@ -40,8 +40,8 @@ class GuiNameLevel(GuiScreen):
 
             self._controlList[0].enabled = len(self.__name.strip()) > 1
 
-    def drawScreen(self, xm, ym):
-        self._drawGradientRect(0, 0, self.width, self.height, 1610941696, -1607454624)
+    def drawScreen(self, xm, ym, renderPartialTicks):
+        self.drawDefaultBackground()
         self.drawCenteredString(self._fontRenderer, self.__title, self.width / 2, 40, 0xFFFFFF)
         w = self.width // 2 - 100
         h = self.height // 2 - 10
@@ -52,4 +52,4 @@ class GuiNameLevel(GuiScreen):
             self.__name + ('_' if self.__counter // 6 % 2 == 0 else ''),
             w + 4, h + 6, 14737632
         )
-        super().drawScreen(xm, ym)
+        super().drawScreen(xm, ym, renderPartialTicks)

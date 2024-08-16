@@ -15,9 +15,9 @@ cdef class EntityMap:
         self.__slot2 = EntityMapSlot(self)
         self.all = []
         self.__tmp = []
-        self.width = w // 16
-        self.depth = h // 16
-        self.height = d // 16
+        self.width = w // 8
+        self.depth = h // 8
+        self.height = d // 8
         if self.width == 0:
             self.width = 1
         if self.depth == 0:
@@ -90,7 +90,6 @@ cdef class EntityMap:
             entity.lastTickPosY = entity.posY
             entity.lastTickPosZ = entity.posZ
             entity.onEntityUpdate()
-            entity.ticksExisted += 1
             if entity.isDead:
                 try:
                     self.all.remove(entity)
@@ -102,12 +101,12 @@ cdef class EntityMap:
                                  entity.lastTickPosZ).remove(entity)
                 continue
 
-            xOld = <int>(entity.lastTickPosX // 16.0)
-            yOld = <int>(entity.lastTickPosY // 16.0)
-            zOld = <int>(entity.lastTickPosZ // 16.0)
-            x = <int>(entity.posX // 16.0)
-            y = <int>(entity.posY // 16.0)
-            z = <int>(entity.posZ // 16.0)
+            xOld = <int>(entity.lastTickPosX // 8.0)
+            yOld = <int>(entity.lastTickPosY // 8.0)
+            zOld = <int>(entity.lastTickPosZ // 8.0)
+            x = <int>(entity.posX // 8.0)
+            y = <int>(entity.posY // 8.0)
+            z = <int>(entity.posZ // 8.0)
             if xOld != x or yOld != y or zOld != z:
                 oldSlot = self.__slot.init(entity.lastTickPosX, entity.lastTickPosY,
                                            entity.lastTickPosZ)

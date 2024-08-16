@@ -21,6 +21,8 @@ cdef class AxisAlignedBB:
     cdef float calculateZOffset(self, AxisAlignedBB c, float za)
     cpdef void offset(self, float xa, float ya, float za)
     cdef AxisAlignedBB copy(self)
+    cdef bint intersects(self, float minX, float minY, float minZ,
+                         float maxX, float maxY, float maxZ)
     cpdef calculateIntercept(self, vec1, vec2)
     cdef bint __isVecInYZ(self, xa)
     cdef bint __isVecInXZ(self, ya)

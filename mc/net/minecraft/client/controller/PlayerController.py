@@ -16,14 +16,15 @@ class PlayerController:
     def sendBlockRemoved(self, x, y, z):
         self._mc.effectRenderer.addBlockDestroyEffects(x, y, z)
         block = blocks.blocksList[self._mc.theWorld.getBlockId(x, y, z)]
+        metadata = self._mc.theWorld.getBlockMetadata(x, y, z)
         change = self._mc.theWorld.setBlockWithNotify(x, y, z, 0)
         if block and change:
             speed = (block.stepSound.soundVolume + 1.0) / 2.0
             self._mc.sndManager.playSound(
-                f'step.{block.stepSound.soundDir}', x + 0.5, y + 0.5, z + 0.5,
+                f'step.{block.stepSound.sound}', x + 0.5, y + 0.5, z + 0.5,
                 speed, block.stepSound.soundPitch * 0.8
             )
-            block.onBlockDestroyedByPlayer(self._mc.theWorld, x, y, z)
+            block.onBlockDestroyedByPlayer(self._mc.theWorld, x, y, z, metadata)
 
         return change
 

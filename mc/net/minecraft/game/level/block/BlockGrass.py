@@ -8,7 +8,7 @@ class BlockGrass(Block):
         self.blockIndexInTexture = 3
         self._setTickOnLoad(True)
 
-    def getBlockTexture(self, face):
+    def getBlockTextureFromSide(self, face):
         if face == 1: return 0
         if face == 0: return 2
         return 3
@@ -27,5 +27,5 @@ class BlockGrass(Block):
                world.getBlockMaterial(x, y + 1, z).getCanBlockGrass():
                 world.setBlockWithNotify(xt, yt, zt, self.blocks.grass.blockID)
 
-    def idDropped(self):
-        return self.blocks.dirt.idDropped()
+    def idDropped(self, metadata):
+        return self.blocks.dirt.idDropped(0)

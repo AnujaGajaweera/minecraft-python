@@ -2,12 +2,13 @@ from mc.net.minecraft.client.render.Tessellator import tessellator
 from mc.net.minecraft.client.render.entity.RenderEntity import RenderEntity
 from mc.net.minecraft.client.render.entity.RenderArrow import RenderArrow
 from mc.net.minecraft.client.render.entity.RenderLiving import RenderLiving
+from mc.net.minecraft.client.render.entity.RenderCreeper import RenderCreeper
+from mc.net.minecraft.client.render.entity.RenderSpider import RenderSpider
 from mc.net.minecraft.client.render.entity.RenderItem import RenderItem
 from mc.net.minecraft.client.render.entity.RenderTNTPrimed import RenderTNTPrimed
-from mc.net.minecraft.client.model.ModelSpider import ModelSpider
+from mc.net.minecraft.client.render.entity.RenderGiantZombie import RenderGiantZombie
 from mc.net.minecraft.client.model.ModelSheep import ModelSheep
 from mc.net.minecraft.client.model.ModelPig import ModelPig
-from mc.net.minecraft.client.model.ModelCreeper import ModelCreeper
 from mc.net.minecraft.client.model.ModelSkeleton import ModelSkeleton
 from mc.net.minecraft.client.model.ModelZombie import ModelZombie
 from mc.net.minecraft.client.model.ModelBiped import ModelBiped
@@ -16,6 +17,7 @@ from mc.net.minecraft.game.entity.EntityLiving import EntityLiving
 from mc.net.minecraft.game.entity.animal.EntityPig import EntityPig
 from mc.net.minecraft.game.entity.animal.EntitySheep import EntitySheep
 from mc.net.minecraft.game.entity.monster.EntityCreeper import EntityCreeper
+from mc.net.minecraft.game.entity.monster.EntityGiantZombie import EntityGiantZombie
 from mc.net.minecraft.game.entity.monster.EntitySkeleton import EntitySkeleton
 from mc.net.minecraft.game.entity.monster.EntitySpider import EntitySpider
 from mc.net.minecraft.game.entity.monster.EntityZombie import EntityZombie
@@ -37,12 +39,14 @@ class RenderManager:
         self.__viewerPosY = 0.0
         self.__viewerPosZ = 0.0
         self.__entityRenderMap = {}
-        self.__entityRenderMap[EntitySpider] = RenderLiving(ModelSpider(), 1.0)
+        self.__entityRenderMap[EntitySpider] = RenderSpider()
         self.__entityRenderMap[EntityPig] = RenderLiving(ModelPig(), 0.7)
         self.__entityRenderMap[EntitySheep] = RenderLiving(ModelSheep(), 0.7)
-        self.__entityRenderMap[EntityCreeper] = RenderLiving(ModelCreeper(), 0.5)
+        self.__entityRenderMap[EntityCreeper] = RenderCreeper()
         self.__entityRenderMap[EntitySkeleton] = RenderLiving(ModelSkeleton(), 0.5)
         self.__entityRenderMap[EntityZombie] = RenderLiving(ModelZombie(), 0.5)
+        self.__entityRenderMap[EntityPlayer] = RenderLiving(ModelBiped(), 0.5)
+        self.__entityRenderMap[EntityGiantZombie] = RenderGiantZombie(ModelZombie(), 0.5, 6.0)
         self.__entityRenderMap[EntityLiving] = RenderLiving(ModelBiped(), 0.5)
         self.__entityRenderMap[Entity] = RenderEntity()
         self.__entityRenderMap[EntityArrow] = RenderArrow()
@@ -64,7 +68,7 @@ class RenderManager:
         yd = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * a
         zd = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * a
         yaw = entity.prevRotationYaw + (entity.rotationYaw - entity.prevRotationYaw) * a
-        light = self.worldObj.getBlockLightValue(
+        light = self.worldObj.getBrightness(
             int(xd),
             int(yd + entity.getShadowSize()),
             int(zd)
@@ -82,7 +86,7 @@ class RenderManager:
             render.doRender(entity, xd, yd, zd, yaw, a)
             render.renderShadow(entity, xd, yd, zd, a)
 
-    def setWorld(self, world):
+    def set(self, world):
         self.worldObj = world
 
     def getDistanceToCamera(self, x, y, z):

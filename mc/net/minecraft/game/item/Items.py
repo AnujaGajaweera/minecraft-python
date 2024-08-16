@@ -2,11 +2,13 @@ from mc.net.minecraft.game.item.ItemFlintAndSteel import ItemFlintAndSteel
 from mc.net.minecraft.game.item.ItemPickaxe import ItemPickaxe
 from mc.net.minecraft.game.item.ItemSword import ItemSword
 from mc.net.minecraft.game.item.ItemSpade import ItemSpade
+from mc.net.minecraft.game.item.ItemSeeds import ItemSeeds
 from mc.net.minecraft.game.item.ItemSoup import ItemSoup
 from mc.net.minecraft.game.item.ItemBlock import ItemBlock
 from mc.net.minecraft.game.item.ItemFood import ItemFood
 from mc.net.minecraft.game.item.ItemAxe import ItemAxe
 from mc.net.minecraft.game.item.ItemBow import ItemBow
+from mc.net.minecraft.game.item.ItemHoe import ItemHoe
 from mc.net.minecraft.game.item.Item import Item
 from mc.net.minecraft.game.level.block.Blocks import blocks
 
@@ -19,7 +21,7 @@ class Items:
         self.pickaxeSteel = ItemPickaxe(self, 1, 2).setIconIndex(98)
         self.axeSteel = ItemAxe(self, 2, 2).setIconIndex(114)
 
-        self.flintSteel = ItemFlintAndSteel(self, 3).setIconIndex(5)
+        self.striker = ItemFlintAndSteel(self, 3).setIconIndex(5)
 
         apple = ItemFood(self, 4, 4).setIconIndex(4)
 
@@ -50,7 +52,7 @@ class Items:
         self.stick = Item(self, 24).setIconIndex(53)
 
         self.bowlEmpty = Item(self, 25).setIconIndex(71)
-        self.bowlSoup = ItemSoup(self, 26, 8).setIconIndex(72)
+        self.bowlSoup = ItemSoup(self, 26, 10).setIconIndex(72)
 
         self.swordGold = ItemSword(self, 27, 0).setIconIndex(68)
         self.shovelGold = ItemSpade(self, 28, 0).setIconIndex(84)
@@ -61,6 +63,16 @@ class Items:
         self.feather = Item(self, 32).setIconIndex(24)
 
         self.gunpowder = Item(self, 33).setIconIndex(40)
+
+        self.hoeWood = ItemHoe(self, 34, 0).setIconIndex(128)
+        self.hoeStone = ItemHoe(self, 35, 1).setIconIndex(129)
+        self.hoeSteel = ItemHoe(self, 36, 2).setIconIndex(130)
+        self.hoeDiamond = ItemHoe(self, 37, 3).setIconIndex(131)
+        self.hoeGold = ItemHoe(self, 38, 4).setIconIndex(132)
+
+        self.seeds = ItemSeeds(self, 39, blocks.crops.blockID).setIconIndex(9)
+        self.wheat = Item(self, 40).setIconIndex(25)
+        self.bread = ItemFood(self, 41, 5).setIconIndex(41)
 
         for i in range(256):
             if blocks.blocksList[i]:

@@ -5,7 +5,6 @@ cimport cython
 from libc.math cimport sin, cos, ceil, sqrt, atan2, pi
 
 from mc.net.minecraft.game.entity.Entity cimport Entity
-from mc.net.minecraft.game.entity.AILiving cimport AILiving
 from mc.net.minecraft.game.level.block.Blocks import blocks
 from mc.net.minecraft.game.item.Items import items
 from mc.JavaUtils cimport random
@@ -15,33 +14,36 @@ from nbtlib.tag import Short
 
 cdef class EntityLiving(Entity):
     ATTACK_DURATION = 5
-    HEALTH = 10
+    HEALTH = 20
 
     def __init__(self, world):
         super().__init__(world)
         self.preventEntitySpawning = True
-        self.heartsHalvesLife = EntityLiving.HEALTH
+        self.__heartsHalvesLife = EntityLiving.HEALTH
         self.renderYawOffset = 0.0
         self.prevRenderYawOffset = 0.0
         self.__prevRotationYawHead = 0.0
         self.__rotationYawHead = 0.0
         self.texture = 'char.png'
-        self.health = EntityLiving.HEALTH
+        self.health = 10
         self.prevHealth = 0
         self.hurtTime = 0
         self.maxHurtTime = 0
         self.attackedAtYaw = 0.0
         self.deathTime = 0
-        self.__attackTime = 0
+        self.attackTime = 0
         self.prevCameraPitch = 0.0
         self.cameraPitch = 0.0
-        self._entityAI = AILiving()
         self.setPosition(self.posX, self.posY, self.posZ)
         self.rotationYaw = random() * (pi * 2.0)
         self.stepHeight = 0.5
-        self.moveStrafing = 0.0
-        self.moveForward = 0.0
+        self._moveStrafing = 0.0
+        self._moveForward = 0.0
         self.randomYawVelocity = 0.0
+        self.__entityAge = 0
+        self._isJumping = False
+        self.__defaultPitch = 0.0
+        self._moveSpeed = 0.7
 
     def canBeCollidedWith(self):
         return not self.isDead
@@ -80,8 +82,8 @@ cdef class EntityLiving(Entity):
             self.air = self._maxAir
 
         self.prevCameraPitch = self.cameraPitch
-        if self.__attackTime > 0:
-            self.__attackTime -= 1
+        if self.attackTime > 0:
+            self.attackTime -= 1
         if self.hurtTime > 0:
             self.hurtTime -= 1
         if self.heartsLife > 0:
@@ -94,7 +96,6 @@ cdef class EntityLiving(Entity):
         self.prevRenderYawOffset = self.renderYawOffset
         self.prevRotationYaw = self.rotationYaw
         self.prevRotationPitch = self.rotationPitch
-        self.ticksExisted += 1
         self.onLivingUpdate()
         xd = self.posX - self.prevPosX
         zd = self.posZ - self.prevPosZ
@@ -146,9 +147,8 @@ cdef class EntityLiving(Entity):
 
         self.__prevRotationYawHead += step
 
-    def onLivingUpdate(self):
-        if self._entityAI:
-            self._entityAI.onLivingUpdate(self._worldObj, self)
+    def setSize(self, w, h):
+        super().setSize(w, h)
 
     def heal(self, int hp):
         if self.health <= 0:
@@ -158,10 +158,7 @@ cdef class EntityLiving(Entity):
         if self.health > EntityLiving.HEALTH:
             self.health = EntityLiving.HEALTH
 
-        self.heartsLife = self.heartsHalvesLife // 2
-
-    def setSize(self, w, h):
-        super().setSize(w, h)
+        self.heartsLife = self.__heartsHalvesLife // 2
 
     def attackEntityFrom(self, Entity entity, int damage):
         cdef float xd, zd, d
@@ -169,18 +166,19 @@ cdef class EntityLiving(Entity):
         if not self._worldObj.survivalWorld:
             return
 
+        self.__entityAge = 0
         if self.health <= 0:
-            return
+            return False
 
-        self.moveForward = 1.5
-        if self.heartsLife > self.heartsHalvesLife // 2.0:
+        self.limbYaw = 1.5
+        if self.heartsLife > self.__heartsHalvesLife // 2.0:
             if self.prevHealth - damage >= self.health:
-                return
+                return False
 
             self.health = self.prevHealth - damage
         else:
             self.prevHealth = self.health
-            self.heartsLife = self.heartsHalvesLife
+            self.heartsLife = self.__heartsHalvesLife
             self.health -= damage
             self.hurtTime = self.maxHurtTime = 10
 
@@ -208,21 +206,23 @@ cdef class EntityLiving(Entity):
         if self.health <= 0:
             self.onDeath(entity)
 
+        return True
+
     def onDeath(self, Entity entity):
         cdef int i
         cdef int drops = self._rand.nextInt(3)
         cdef int drop = self._rand.nextInt(4)
         if drop == 0:
             for i in range(drops):
-                self.entityDropItem(items.silk.shiftedIndex, 1)
+                self.dropItemWithOffset(items.silk.shiftedIndex, 1)
         elif drop == 1:
             for i in range(drops):
-                self.entityDropItem(items.gunpowder.shiftedIndex, 1)
+                self.dropItemWithOffset(items.gunpowder.shiftedIndex, 1)
         elif drop == 2:
             for i in range(drops):
-                self.entityDropItem(items.feather.shiftedIndex, 1)
+                self.dropItemWithOffset(items.feather.shiftedIndex, 1)
         elif drop == 3:
-            self.entityDropItem(items.flintSteel.shiftedIndex, 1)
+            self.dropItemWithOffset(items.striker.shiftedIndex, 1)
 
     cdef _fall(self, float d):
         cdef int damage = <int>ceil(d - 3.0)
@@ -233,12 +233,9 @@ cdef class EntityLiving(Entity):
                                               <int>self.posZ)
             if block > 0:
                 sound = blocks.blocksList[block].stepSound
-                self._worldObj.playSoundAtEntity(self, 'step.' + sound.soundDir,
+                self._worldObj.playSoundAtEntity(self, 'step.' + sound.sound,
                                                sound.soundVolume * 0.5,
                                                sound.soundPitch * (12.0 / 16.0))
-
-    def setEntityAI(self, ai):
-        self._entityAI = ai
 
     cdef travel(self, float x, float z):
         if self.handleWaterMovement():
@@ -274,26 +271,91 @@ cdef class EntityLiving(Entity):
                 self.motionX *= 0.6
                 self.motionZ *= 0.6
 
-        self.moveStrafing = self.moveForward
+        self.prevLimbYaw = self.limbYaw
         xd = self.posX - self.prevPosX
         zd = self.posZ - self.prevPosZ
         d = sqrt(xd * xd + zd * zd) * 4.0
         d = min(d, 1.0)
 
-        self.moveForward += (d - self.moveForward) * 0.4
-        self.randomYawVelocity += self.moveForward
+        self.limbYaw += (d - self.limbYaw) * 0.4
+        self.limbSwing += self.limbYaw
 
     def _writeEntityToNBT(self, compound):
         compound['Health'] = Short(self.health)
         compound['HurtTime'] = Short(self.hurtTime)
         compound['DeathTime'] = Short(self.deathTime)
-        compound['AttackTime'] = Short(self.__attackTime)
+        compound['AttackTime'] = Short(self.attackTime)
 
     def _readEntityFromNBT(self, compound):
         self.health = compound['Health'].real
         self.hurtTime = compound['HurtTime'].real
         self.deathTime = compound['DeathTime'].real
-        self.__attackTime = compound['AttackTime'].real
+        self.attackTime = compound['AttackTime'].real
 
     def _getEntityString(self):
         return 'Mob'
+
+    def isEntityAlive(self):
+        return not self.isDead and self.health > 0
+
+    def onLivingUpdate(self):
+        cdef Entity entity
+        cdef bint isInWater, isInLava
+        cdef float xd, yd, zd
+
+        self.__entityAge += 1
+        if self.__entityAge > 600 and self._rand.nextInt(800) == 0:
+            entity = self._worldObj.getPlayerEntity()
+            if entity:
+                xd = entity.posX - self.posX
+                yd = entity.posY - self.posY
+                zd = entity.posZ - self.posZ
+                if xd * xd + yd * yd + zd * zd < 1024.0:
+                    self.__entityAge = 0
+                else:
+                    self.setEntityDead()
+
+        if self.health <= 0:
+            self._isJumping = False
+            self._moveStrafing = 0.0
+            self._moveForward = 0.0
+            self.__randomYawVelocity = 0.0
+        else:
+            self._updatePlayerActionState()
+
+        isInWater = self.handleWaterMovement()
+        isInLava = self.handleLavaMovement()
+        if self._isJumping:
+            if isInWater:
+                self.motionY += 0.04
+            elif isInLava:
+                self.motionY += 0.04
+            elif self.onGround:
+                self.motionY = 0.42
+
+        self._moveStrafing *= 0.98
+        self._moveForward *= 0.98
+        self.__randomYawVelocity *= 0.9
+        self.travel(self._moveStrafing, self._moveForward)
+        entities = self._worldObj.getEntitiesWithinAABBExcludingEntity(self, self.boundingBox.expand(0.2, 0.0, 0.2))
+        if entities and len(entities) > 0:
+            for entity in entities:
+                if entity.canBePushed():
+                    entity.applyEntityCollision(self)
+
+    def _updatePlayerActionState(self):
+        if self._rand.nextFloat() < 0.07:
+            self._moveStrafing = (self._rand.nextFloat() - 0.5) * self._moveSpeed
+            self._moveForward = self._rand.nextFloat() * self._moveSpeed
+
+        self._isJumping = self._rand.nextFloat() < 0.01
+        if self._rand.nextFloat() < 0.04:
+            self.__randomYawVelocity = (self._rand.nextFloat() - 0.5) * 60.0
+
+        self.rotationYaw += self.__randomYawVelocity
+        self.rotationPitch = 0.0
+        if self.handleWaterMovement() or self.handleLavaMovement():
+            self._isJumping = self._rand.nextFloat() < 0.8
+
+    def getCanSpawnHere(self, x, y, z):
+        return True

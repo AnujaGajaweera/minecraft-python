@@ -68,35 +68,56 @@ cdef class Buffer(Bits):
 @cython.final
 cdef class ByteBuffer(Buffer):
     cdef:
-        unsigned char[:] __array
+        unsigned char[:] _array
         object __dataPtr
+        int __lastPos
 
     cpdef inline put(self, unsigned char value)
+    cdef inline putIntB(self, int bi, int x)
+    cdef inline putFloatB(self, int bi, float x)
     cpdef inline unsigned char get(self)
     cpdef inline unsigned char getAt(self, int idx)
     cdef inline __getDataPtr(self)
+    cdef IntBuffer asIntBuffer(self)
+    cdef FloatBuffer asFloatBuffer(self)
 
-@cython.final
 cdef class IntBuffer(Buffer):
     cdef:
         int[:] __array
-        object __dataPtr
+        object _dataPtr
+        int _lastPos
 
-    cpdef inline put(self, int value)
+    cpdef put(self, int value)
     cdef putInts(self, int[:] src, int offset, int length)
-    cpdef inline int get(self)
-    cpdef inline int getAt(self, int idx)
-    cdef inline __getDataPtr(self)
+    cpdef int get(self)
+    cpdef int getAt(self, int idx)
+    cdef _getDataPtr(self)
 
-@cython.final
 cdef class FloatBuffer(Buffer):
     cdef:
         float[:] __array
-        object __dataPtr
+        object _dataPtr
+        int _lastPos
 
-    cpdef inline put(self, float value)
+    cpdef put(self, float value)
     cdef putFloats(self, float* src, int offset, int length)
-    cpdef inline float get(self)
-    cpdef inline float getAt(self, int idx)
+    cpdef float get(self)
+    cpdef float getAt(self, int idx)
     cdef getFloats(self, float*, int size)
-    cdef inline __getDataPtr(self)
+    cdef _getDataPtr(self)
+
+cdef class ByteBufferAsIntBuffer(IntBuffer):
+    cdef:
+        ByteBuffer _bb
+        int _offset
+
+    cpdef put(self, int value)
+    cdef _getDataPtr(self)
+
+cdef class ByteBufferAsFloatBuffer(FloatBuffer):
+    cdef:
+        ByteBuffer _bb
+        int _offset
+
+    cpdef put(self, float value)
+    cdef _getDataPtr(self)

@@ -1,5 +1,6 @@
 from mc.net.minecraft.client.model.TexturedQuad import TexturedQuad
 from mc.net.minecraft.client.model.PositionTextureVertex import PositionTextureVertex
+from mc.net.minecraft.client.render.Tessellator import tessellator
 from mc.net.minecraft.game.physics.Vec3D import Vec3D
 from pyglet import gl
 
@@ -111,8 +112,9 @@ class ModelRenderer:
         if not self.__compiled:
             self.__displayList = gl.glGenLists(1)
             gl.glNewList(self.__displayList, gl.GL_COMPILE)
-            gl.glBegin(gl.GL_QUADS)
+            t = tessellator
             for face in self.__faces:
+                t.startDrawingQuads()
                 vec1 = face.vertexPositions[1].vector3D.subtract(
                     face.vertexPositions[0].vector3D
                 ).normalize()
@@ -122,15 +124,15 @@ class ModelRenderer:
                 vec = Vec3D(vec1.yCoord * vec2.zCoord - vec1.zCoord * vec2.yCoord,
                            vec1.zCoord * vec2.xCoord - vec1.xCoord * vec2.zCoord,
                            vec1.xCoord * vec2.yCoord - vec1.yCoord * vec2.xCoord).normalize()
-                gl.glNormal3f(-vec.xCoord, -vec.yCoord, -vec.zCoord)
+                t.setNormal(-vec.xCoord, -vec.yCoord, -vec.zCoord)
                 for i in range(4):
                     v = face.vertexPositions[i]
-                    gl.glTexCoord2f(v.texturePositionX, v.texturePositionY)
-                    gl.glVertex3f(v.vector3D.xCoord * translation,
-                                  v.vector3D.yCoord * translation,
-                                  v.vector3D.zCoord * translation)
+                    t.addVertexWithUV(v.vector3D.xCoord * translation,
+                                      v.vector3D.yCoord * translation,
+                                      v.vector3D.zCoord * translation,
+                                      v.texturePositionX, v.texturePositionY)
+                t.draw()
 
-            gl.glEnd()
             gl.glEndList()
             self.__compiled = True
 

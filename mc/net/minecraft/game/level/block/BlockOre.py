@@ -6,7 +6,7 @@ class BlockOre(Block):
     def __init__(self, blocks, blockId, tex):
         super().__init__(blocks, blockId, tex, Material.wood)
 
-    def idDropped(self):
+    def idDropped(self, metadata):
         from mc.net.minecraft.game.item.Items import items
         if self.blockID == self.blocks.oreCoal.blockID:
             return items.coal.shiftedIndex

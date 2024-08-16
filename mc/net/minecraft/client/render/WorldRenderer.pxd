@@ -2,7 +2,7 @@
 
 cimport cython
 
-from mc.net.minecraft.client.render.Frustum cimport Frustum
+from mc.net.minecraft.client.render.camera.Frustum cimport Frustum
 from mc.net.minecraft.client.render.Tessellator cimport Tessellator
 from mc.net.minecraft.client.render.RenderBlocks cimport RenderBlocks
 from mc.net.minecraft.game.level.block.Block cimport Block
@@ -28,13 +28,18 @@ cdef class WorldRenderer:
         int __sizeHeight
         int __sizeDepth
 
+        public bint isInFrustum
+
         int __posXPlus
         int __posYPlus
         int __posZPlus
 
-        bint[2] __skipRenderPass
-        public bint isInFrustum
         public bint needsUpdate
+
+        bint[2] __skipRenderPass
+        public bint isVisible
+        public bint isWaitingOnOcclusionQuery
+        public int glOcclusionQuery
 
     cdef updateRenderer(self)
     cpdef float distanceToEntitySquared(self, player)

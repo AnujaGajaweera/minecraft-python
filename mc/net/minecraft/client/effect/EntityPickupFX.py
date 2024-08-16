@@ -28,7 +28,7 @@ class EntityPickupFX(EntityFX):
         x += (xd - x) * age
         y += (yd - y) * age
         z += (zd - z) * age
-        br = self._worldObj.getBlockLightValue(int(x), int(y), int(z))
+        br = self._worldObj.getBrightness(int(x), int(y), int(z))
         gl.glColor4f(br, br, br, 1.0)
         RenderManager.instance.renderEntityWithPosYaw(
             self.__entityToPickUp, x, y, z, self.__entityToPickUp.rotationYaw, a

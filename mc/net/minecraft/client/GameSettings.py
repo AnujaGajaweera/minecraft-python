@@ -135,6 +135,7 @@ _GL_KEYS = {v: k for k, v in _KEYS.items()}
 
 class GameSettings:
     __RENDER_DISTANCES = ('FAR', 'NORMAL', 'SHORT', 'TINY')
+    __DIFFICULTIES = ('Peaceful', 'Easy', 'Normal', 'Hard')
     music = True
     sound = True
     invertMouse = False
@@ -143,7 +144,8 @@ class GameSettings:
     viewBobbing = True
     anaglyph = False
     limitFramerate = False
-    numberOfOptions = 8
+    numberOfOptions = 9
+    difficulty = 2
     openAlFail = False
 
     def __init__(self, mc, file):
@@ -193,6 +195,8 @@ class GameSettings:
             self.__mc.renderEngine.refreshTextures()
         elif option == 7:
             self.limitFramerate = not self.limitFramerate
+        elif option == 8:
+            self.difficulty = self.difficulty + arg & 3
 
         self.__saveOptions()
 
@@ -213,6 +217,8 @@ class GameSettings:
             return '3d anaglyph: ' + ('ON' if self.anaglyph else 'OFF')
         elif option == 7:
             return 'Limit framerate: ' + ('ON' if self.limitFramerate else 'OFF')
+        elif option == 8:
+            return 'Difficulty: ' + GameSettings.__DIFFICULTIES[self.difficulty]
 
         return ''
 
@@ -241,6 +247,8 @@ class GameSettings:
                             self.limitFramerate = split[1] == 'true'
                         elif split[0] == 'openAlFail':
                             self.openAlFail = split[1] == 'true'
+                        elif split[0] == 'difficulty':
+                            self.difficulty = int(split[1])
 
                         for binding in self.keyBindings:
                             if split[0] == 'key_' + binding.keyDescription:
@@ -259,6 +267,7 @@ class GameSettings:
                 f.write('bobView:' + ('true' if self.viewBobbing else 'false') + '\n')
                 f.write('anaglyph3d:' + ('true' if self.anaglyph else 'false') + '\n')
                 f.write('limitFramerate:' + ('true' if self.limitFramerate else 'false') + '\n')
+                f.write('difficulty:' + str(self.difficulty) + '\n')
                 if self.openAlFail:
                     f.write('openAlFail:' + ('true' if self.openAlFail else 'false') + '\n')
 

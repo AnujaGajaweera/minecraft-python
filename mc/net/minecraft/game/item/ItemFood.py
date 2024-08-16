@@ -9,11 +9,5 @@ class ItemFood(Item):
 
     def onItemRightClick(self, stack, world, player):
         stack.stackSize -= 1
-        if player.health > 0:
-            player.health += self.__healAmount
-            if player.health > player.HEALTH:
-                player.health = player.HEALTH
-
-            player.heartsLife = player.heartsHalvesLife // 2
-
+        player.heal(self.__healAmount)
         return stack

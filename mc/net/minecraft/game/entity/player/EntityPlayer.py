@@ -1,6 +1,8 @@
 from mc.net.minecraft.game.entity.player.InventoryPlayer import InventoryPlayer
 from mc.net.minecraft.game.entity.EntityLiving import EntityLiving
 from mc.net.minecraft.game.entity.misc.EntityItem import EntityItem
+from mc.net.minecraft.game.entity.monster.EntityMob import EntityMob
+from mc.net.minecraft.game.entity.projectile.EntityArrow import EntityArrow
 from mc.net.minecraft.game.item.Items import items
 from mc.net.minecraft.game.item.ItemStack import ItemStack
 from mc.net.minecraft.game.level.block.Blocks import blocks
@@ -39,6 +41,10 @@ class EntityPlayer(EntityLiving):
         self.deathTime = 0
 
     def onLivingUpdate(self):
+        if self._worldObj.difficultySetting == 0 and self.health < 20 and \
+           self.ticksExisted % 20 << 2 == 0:
+            self.heal(1)
+
         self.inventory.tick()
         self.prevCameraYaw = self.cameraYaw
         super().onLivingUpdate()
@@ -130,3 +136,14 @@ class EntityPlayer(EntityLiving):
 
     def _getEyeHeight(self):
         return 0.12
+
+    def attackEntityFrom(self, entity, damage):
+        if isinstance(entity, EntityMob) or isinstance(entity, EntityArrow):
+            if self._worldObj.difficultySetting == 0:
+                damage = 0
+            elif self._worldObj.difficultySetting == 1:
+                damage = damage // 3 + 1
+            elif self._worldObj.difficultySetting == 3:
+                damage = damage * 3 // 2
+
+        return super().attackEntityFrom(entity, damage)

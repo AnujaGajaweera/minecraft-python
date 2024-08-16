@@ -5,14 +5,14 @@ from pyglet import window, gl
 class GuiScreen(Gui):
     allowUserInput = False
 
-    def drawScreen(self, xMouse, yMouse):
+    def drawScreen(self, xMouse, yMouse, renderPartialTicks):
         for button in self._controlList:
             button.drawButton(self.mc, xMouse, yMouse)
 
     def _keyTyped(self, key, char, motion):
         if key == window.key.ESCAPE:
             self.mc.displayGuiScreen(None)
-            self.mc.grabMouse()
+            self.mc.setIngameFocus()
 
     def _mouseClicked(self, xm, ym, button):
         if button == window.mouse.LEFT:
@@ -52,3 +52,26 @@ class GuiScreen(Gui):
 
     def onGuiClosed(self):
         pass
+
+    def drawDefaultBackground(self):
+        if self.mc.theWorld:
+            self._drawGradientRect(0, 0, self.width, self.height,
+                                   1610941696, -1607454624)
+            return
+
+        gl.glDisable(gl.GL_LIGHTING)
+        gl.glDisable(gl.GL_FOG)
+        t = tessellator
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.mc.renderEngine.getTexture('dirt.png'))
+        gl.glColor4f(1.0, 1.0, 1.0, 1.0)
+        t.startDrawingQuads()
+        t.setColorOpaque_I(4210752)
+        t.addVertexWithUV(0.0, self.height, 0.0, 0.0, self.height / 32.0)
+        t.addVertexWithUV(self.width, self.height, 0.0, self.width / 32.0,
+                          self.height / 32.0)
+        t.addVertexWithUV(self.width, 0.0, 0.0, self.width / 32.0, 0.0)
+        t.addVertexWithUV(0.0, 0.0, 0.0, 0.0, 0.0)
+        t.draw()
+
+    def doesGuiPauseGame(self):
+        return True

@@ -9,7 +9,7 @@ class BlockStep(Block):
         if not self.__blockType:
             self._setBlockBounds(0.0, 0.0, 0.0, 1.0, 0.5, 1.0)
 
-    def getBlockTexture(self, face):
+    def getBlockTextureFromSide(self, face):
         return 6 if face <= 1 else 5
 
     def isOpaqueCube(self):
@@ -27,7 +27,7 @@ class BlockStep(Block):
             world.setBlockWithNotify(x, y, z, 0)
             world.setBlockWithNotify(x, y - 1, z, self.blocks.stairDouble.blockID)
 
-    def idDropped(self):
+    def idDropped(self, metadata):
         return self.blocks.stairSingle.blockID
 
     def renderAsNormalBlock(self):

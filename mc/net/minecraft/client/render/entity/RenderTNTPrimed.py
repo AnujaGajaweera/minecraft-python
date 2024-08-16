@@ -1,11 +1,10 @@
-from mc.net.minecraft.client.render.Tessellator import tessellator
 from mc.net.minecraft.client.render.entity.Render import Render
 from mc.net.minecraft.client.render.RenderBlocks import RenderBlocks
 from mc.net.minecraft.game.level.block.Blocks import blocks
 from pyglet import gl
 
 class RenderTNTPrimed(Render):
-    __blockRenderer = RenderBlocks(tessellator)
+    __blockRenderer = RenderBlocks()
 
     def __init__(self):
         super().__init__()

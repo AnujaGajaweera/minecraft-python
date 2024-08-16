@@ -232,16 +232,16 @@ cdef class LevelGenerator:
                 print(f'Coal: {coal}, Iron: {iron}, Gold: {gold}, Diamond: {diamonds}')
 
             self.__guiLoading.displayLoadingString('Watering..')
-            self.__addWater()
+            self.__liquidThemeSpawner()
 
             self.__guiLoading.displayLoadingString('Melting..')
-            self.__addLava()
+            self.__lavaGen()
 
             self.__guiLoading.displayLoadingString('Growing..')
-            self.__addBeaches(heightmap)
+            self.__growGravelAndSand(heightmap)
             self.__guiLoading.displayLoadingString('Planting..')
-            self.__addFlowers(heightmap)
-            self.__addMushrooms(heightmap)
+            self.__growPlants(heightmap)
+            self.__growMushrooms(heightmap)
 
             free(heightmap)
 
@@ -264,7 +264,7 @@ cdef class LevelGenerator:
             world.cloudColor = 2164736
             world.fogColor = 1049600
             world.skyColor = 1049600
-            world.skyBrightness = 0.3
+            world.skyBrightness = 0.5
             world.defaultFluid = blocks.lavaMoving.blockID
             if self.floatingGen:
                 world.cloudHeight = self.__height + 2
@@ -277,7 +277,7 @@ cdef class LevelGenerator:
         self.__guiLoading.displayLoadingString('Post-processing..')
 
         if self.levelType != 1:
-            self.__addGrass(world)
+            self.__growGrassOnDirt(world)
 
         self.__growTrees(world)
 
@@ -289,7 +289,7 @@ cdef class LevelGenerator:
 
         return world
 
-    cdef __addGrass(self, world):
+    cdef __growGrassOnDirt(self, World world):
         cdef int x, y, z
         for x in range(self.__width):
             for y in range(self.__height):
@@ -299,7 +299,7 @@ cdef class LevelGenerator:
                        world.getBlockMaterial(x, y + 1, z).getCanBlockGrass():
                         world.setBlock(x, y, z, blocks.grass.blockID)
 
-    cdef __addBeaches(self, int* heightmap):
+    cdef __growGravelAndSand(self, int* heightmap):
         cdef int w, h, d, x, y, heightmap1, heightmap2, blockId
         cdef bint isSand, isGravel
         cdef char block
@@ -353,7 +353,7 @@ cdef class LevelGenerator:
                        y < self.__height and z < self.__depth and self.__rand.nextInt(4) == 0:
                         world.growTrees(x, y, z)
 
-    cdef __addFlowers(self, int* heightmap):
+    cdef __growPlants(self, int* heightmap):
         cdef int i, j, k, size, kind, w, d, x, y, z, block, blockUnder
 
         size = self.__width * self.__depth // 3000
@@ -382,7 +382,7 @@ cdef class LevelGenerator:
                         elif kind == 1:
                             self.__blocksByteArray[block] = blocks.plantRed.blockID
 
-    cdef __addMushrooms(self, int* heightmap):
+    cdef __growMushrooms(self, int* heightmap):
         cdef int block, size, kind, w, h, d, x, y, z
 
         size = self.__width * self.__depth * self.__height // 2000
@@ -466,7 +466,7 @@ cdef class LevelGenerator:
 
         return ores
 
-    cdef __addWater(self):
+    cdef __liquidThemeSpawner(self):
         target = blocks.waterStill.blockID
         if self.levelType == 1:
             target = blocks.lavaStill.blockID
@@ -492,7 +492,7 @@ cdef class LevelGenerator:
                 else:
                     self.__floodFill(ix, iy, iz, 255, 0)
 
-    cdef __addLava(self):
+    cdef __lavaGen(self):
         cdef int size, i, x, y, z
         cdef long flooded
 

@@ -63,15 +63,15 @@ class GuiLoadLevel(GuiScreen):
 
     def _openLevel(self, id_):
         self.mc.displayGuiScreen(None)
-        self.mc.grabMouse()
+        self.mc.setIngameFocus()
 
-    def drawScreen(self, xm, ym):
-        self._drawGradientRect(0, 0, self.width, self.height, 1610941696, -1607454624)
+    def drawScreen(self, xm, ym, renderPartialTicks):
+        self.drawDefaultBackground()
         self.drawCenteredString(self._fontRenderer, self._title, self.width // 2, 20, 0xFFFFFF)
         if not self.__loaded:
             self.drawCenteredString(self._fontRenderer, self.__status, self.width // 2, self.height // 2 - 4, 0xFFFFFF)
 
-        super().drawScreen(xm, ym)
+        super().drawScreen(xm, ym, renderPartialTicks)
 
     def _openFile(self, file):
         try:

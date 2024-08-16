@@ -35,9 +35,9 @@ class GuiIngameMenu(GuiScreen):
             self.mc.displayGuiScreen(GuiLoadLevel(self))
         elif button.id == 4:
             self.mc.displayGuiScreen(None)
-            self.mc.grabMouse()
+            self.mc.setIngameFocus()
 
-    def drawScreen(self, xm, ym):
-        self._drawGradientRect(0, 0, self.width, self.height, 1610941696, -1607454624)
+    def drawScreen(self, xm, ym, renderPartialTicks):
+        self.drawDefaultBackground()
         self.drawCenteredString(self._fontRenderer, 'Game menu', self.width // 2, 40, 0xFFFFFF)
-        super().drawScreen(xm, ym)
+        super().drawScreen(xm, ym, renderPartialTicks)

@@ -71,15 +71,19 @@ cdef class Block:
         self.maxZ = maxZ
 
     cdef float getBlockBrightness(self, World world, int x, int y, int z):
-        return world.getBlockLightValue(x, y, z)
+        return world.getBrightness(x, y, z)
 
     cpdef bint shouldSideBeRendered(self, World world, int x, int y, int z, int layer):
         return not world.isBlockNormalCube(x, y, z)
 
-    cpdef int getBlockTextureFromSideAndMetadata(self, World world, int x, int y, int z, int layer):
-        return self.getBlockTexture(layer)
+    cpdef int getBlockTexture(self, World world, int x, int y, int z, int layer):
+        return self.getBlockTextureFromSideAndMetadata(layer,
+                                                       world.getBlockMetadata(x, y, z))
 
-    cpdef int getBlockTexture(self, int face):
+    cpdef int getBlockTextureFromSideAndMetadata(self, int layer, int metadata):
+        return self.getBlockTextureFromSide(layer)
+
+    cpdef int getBlockTextureFromSide(self, int face):
         return self.blockIndexInTexture
 
     def getSelectedBoundingBoxFromPool(self, int x, int y, int z):
@@ -96,13 +100,13 @@ cdef class Block:
     cpdef bint isCollidable(self):
         return True
 
-    cpdef void updateTick(self, World world, int x, int y, int z, Random random) except *:
+    cpdef updateTick(self, World world, int x, int y, int z, Random random):
         pass
 
     cpdef void randomDisplayTick(self, World world, int x, int y, int z, Random random) except *:
         pass
 
-    def onBlockDestroyedByPlayer(self, World world, int x, int y, int z):
+    def onBlockDestroyedByPlayer(self, World world, int x, int y, int z, int metadata):
         pass
 
     cpdef void onNeighborBlockChange(self, World world, int x, int y, int z, int blockType) except *:
@@ -120,28 +124,35 @@ cdef class Block:
     cpdef int quantityDropped(self, Random random):
         return 1
 
-    cpdef int idDropped(self):
+    cpdef int idDropped(self, int metadata):
         return self.blockID
 
     def blockStrength(self, player):
         if self._hardness < 0.0:
-            return -1
+            return 0.0
+        elif self._hardness == 0.0:
+            return float('inf')
         elif not player.canHarvestBlock(self):
-            return <int>(self._hardness * 100.0)
+            return 1.0 / self._hardness / 100.0
         else:
-            return <int>(self._hardness / player.getStrVsBlock(self) * 30.0)
+            return player.getStrVsBlock(self) / self._hardness / 30.0
 
-    def dropBlockAsItem(self, World world, int x, int y, int z):
-        self.dropBlockAsItemWithChance(world, x, y, z, 1.0)
+    def dropBlockAsItem(self, World world, int x, int y, int z, int metadata):
+        self.dropBlockAsItemWithChance(world, x, y, z, metadata, 1.0)
 
-    cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z, float chance):
+    cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z,
+                                   int metadata, float chance):
         from mc.net.minecraft.game.entity.misc.EntityItem import EntityItem
         from mc.net.minecraft.game.item.ItemStack import ItemStack
-        cdef int i
+        cdef int i, idDrop
         cdef float xx, yy, zz
 
         for i in range(self.quantityDropped(world.rand)):
             if world.rand.nextFloat() > chance:
+                continue
+
+            idDrop = self.idDropped(metadata)
+            if idDrop <= 0:
                 continue
 
             xx = world.rand.nextFloat() * 0.7 + 0.15
@@ -149,7 +160,7 @@ cdef class Block:
             zz = world.rand.nextFloat() * 0.7 + 0.15
             item = EntityItem(
                 world, x + xx, y + yy, z + zz,
-                ItemStack(self.idDropped())
+                ItemStack(idDrop)
             )
             item.delayBeforeCanPickup = 10
             world.spawnEntityInWorld(item)
@@ -246,3 +257,6 @@ cdef class Block:
 
     def onBlockPlaced(self, World world, float x, float y, float z):
         return False
+
+    def onEntityWalking(self, World world, int x, int y, int z):
+        pass

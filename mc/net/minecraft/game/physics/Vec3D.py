@@ -27,7 +27,7 @@ class Vec3D:
         zd = vec.zCoord - self.zCoord
         return math.sqrt(xd * xd + yd * yd + zd * zd)
 
-    def squaredDistanceTo(self, vec):
+    def squareDistanceTo(self, vec):
         xd = vec.xCoord - self.xCoord
         yd = vec.yCoord - self.yCoord
         zd = vec.zCoord - self.zCoord

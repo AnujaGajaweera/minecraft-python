@@ -41,10 +41,9 @@ class GuiNewLevel(GuiScreen):
         if button.id == 5:
             self.mc.displayGuiScreen(self.__prevGui)
         elif button.id == 4:
-            self.mc.generateNewLevel(self.__selectedWorldSize, self.__selectedWorldShape,
-                                      self.__selectedWorldType, self.__selectedWorldTheme)
+            self.mc.generateLevel(self.__selectedWorldSize, self.__selectedWorldShape,
+                                  self.__selectedWorldType, self.__selectedWorldTheme)
             self.mc.displayGuiScreen(None)
-            self.mc.grabMouse()
         elif button.id == 0:
             self.__selectedWorldType = (self.__selectedWorldType + 1) % len(self.__worldType)
         elif button.id == 1:
@@ -56,8 +55,8 @@ class GuiNewLevel(GuiScreen):
 
         self.__worldOptions()
 
-    def drawScreen(self, xm, ym):
-        self._drawGradientRect(0, 0, self.width, self.height, 1610941696, -1607454624)
+    def drawScreen(self, xm, ym, renderPartialTicks):
+        self.drawDefaultBackground()
         self.drawCenteredString(self._fontRenderer, 'Generate new level',
                                 self.width // 2, 40, 0xFFFFFF)
-        super().drawScreen(xm, ym)
+        super().drawScreen(xm, ym, renderPartialTicks)

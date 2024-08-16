@@ -11,7 +11,7 @@ class MovingObjectPosition:
             self.blockY = 0
             self.blockZ = 0
             self.sideHit = 0
-            self.hitVec = None
+            self.hitVec = Vec3D(entity.posX, entity.posY, entity.posZ)
         else:
             self.typeOfHit = 0
             self.blockX = x

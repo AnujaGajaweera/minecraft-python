@@ -7,11 +7,11 @@ class BlockWorkbench(Block):
         super().__init__(blocks, 58, Material.wood)
         self.blockIndexInTexture = 59
 
-    def getBlockTexture(self, face):
+    def getBlockTextureFromSide(self, face):
         if face == 1:
             return self.blockIndexInTexture - 16
         elif face == 0:
-            return self.blocks.planks.getBlockTexture(0)
+            return self.blocks.planks.getBlockTextureFromSide(0)
         elif face != 2 and face != 4:
             return self.blockIndexInTexture
         else:

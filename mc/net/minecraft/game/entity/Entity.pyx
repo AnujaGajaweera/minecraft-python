@@ -119,8 +119,9 @@ cdef class Entity:
 
     def onEntityUpdate(self):
         cdef int i
-        cdef float volume, x, y, z
+        cdef float volume, x, y, z, limit
 
+        self.ticksExisted += 1
         self.prevDistanceWalkedModified = self.distanceWalkedModified
         self.prevPosX = self.posX
         self.prevPosY = self.posY
@@ -141,15 +142,15 @@ cdef class Entity:
 
                 y = self.boundingBox.minY
                 for i in range(<int>(1.0 + self.width * 20.0)):
-                    x = (self._rand.nextFloat() * 2.0 - 1.0) * self.width * 2.0
-                    z = (self._rand.nextFloat() * 2.0 - 1.0) * self.width * 2.0
+                    x = (self._rand.nextFloat() * 2.0 - 1.0) * self.width
+                    z = (self._rand.nextFloat() * 2.0 - 1.0) * self.width
                     self._worldObj.spawnParticle(
                         'bubble', self.posX + x, y + 1.0, self.posZ + z, self.motionX,
                         self.motionY - self._rand.nextFloat() * 0.2, self.motionZ
                     )
                 for i in range(<int>(1.0 + self.width * 20.0)):
-                    x = (self._rand.nextFloat() * 2.0 - 1.0) * self.width * 2.0
-                    z = (self._rand.nextFloat() * 2.0 - 1.0) * self.width * 2.0
+                    x = (self._rand.nextFloat() * 2.0 - 1.0) * self.width
+                    z = (self._rand.nextFloat() * 2.0 - 1.0) * self.width
                     self._worldObj.spawnParticle(
                         'splash', self.posX + x, y + 1.0, self.posZ + z,
                         self.motionX, self.motionY, self.motionZ
@@ -171,6 +172,19 @@ cdef class Entity:
             self.attackEntityFrom(None, 10)
             self.fire = 600
 
+        if self.posX < -8.0:
+            limit = -(self.posX + 8.0)
+            self.motionX += limit * 0.001
+        if self.posZ < -8.0:
+            limit = -(self.posZ + 8.0)
+            self.motionZ += limit * 0.001
+        if self.posX > self._worldObj.width + 8.0:
+            limit = self.posX - self._worldObj.width + 8.0
+            self.motionX -= limit * 0.001
+        if self.posZ > self._worldObj.length + 8.0:
+            limit = self.posZ - self._worldObj.length + 8.0
+            self.motionZ -= limit * 0.001
+
         self.__firstUpdate = False
 
     cdef bint isOffsetPositionInLiquid(self, float xa, float ya, float za):
@@ -182,7 +196,7 @@ cdef class Entity:
         return not self._worldObj.getIsAnyLiquid(axisAlignedBB)
 
     cpdef moveEntity(self, float x, float y, float z):
-        cdef int block
+        cdef int walkX, walkY, walkZ, block
         cdef float xOrg, zOrg, xaOrg, yaOrg, zaOrg, xo, yo, zo, xd, zd
         cdef bint onGround
         cdef AxisAlignedBB aabbOrg, aABB, aabb
@@ -298,14 +312,16 @@ cdef class Entity:
         zd = self.posZ - zOrg
         self.distanceWalkedModified = <float>(self.distanceWalkedModified + sqrt(xd * xd + zd * zd) * 0.6)
         if self._canTriggerWalking:
-            block = self._worldObj.getBlockId(<int>self.posX,
-                                              <int>(self.posY - 0.2 - self.yOffset),
-                                              <int>self.posZ)
+            walkX = <int>self.posX
+            walkY = <int>(self.posY - 0.2 - self.yOffset)
+            walkZ = <int>self.posZ
+            block = self._worldObj.getBlockId(walkX, walkY, walkZ)
             if self.distanceWalkedModified > self.__nextStepDistance and block > 0:
                 self.__nextStepDistance += 1
                 sound = blocks.blocksList[block].stepSound
-                self._worldObj.playSoundAtEntity(self, 'step.' + sound.soundDir,
+                self._worldObj.playSoundAtEntity(self, 'step.' + sound.sound,
                                                  sound.soundVolume * 0.15, sound.soundPitch)
+                blocks.blocksList[block].onEntityWalking(self._worldObj, walkX, walkY, walkZ)
 
         self.__ySize *= 0.4
         inWater = self.handleWaterMovement()
@@ -347,7 +363,7 @@ cdef class Entity:
     cpdef float _getEyeHeight(self):
         return 0.0
 
-    cdef bint handleLavaMovement(self):
+    cpdef bint handleLavaMovement(self):
         return self._worldObj.handleMaterialAcceleration(self.boundingBox.expand(0.0, -0.4, 0.0),
                                                          Material.lava)
 
@@ -376,18 +392,24 @@ cdef class Entity:
         x = <int>self.posX
         y = <int>(self.posY + self.yOffset / 2.0)
         z = <int>self.posZ
-        return self._worldObj.getBlockLightValue(x, y, z)
+        return self._worldObj.getBrightness(x, y, z)
 
     def setWorld(self, world):
         self._worldObj = world
 
     def setPositionAndRotation(self, x, y, z, yaw, pitch):
         self.prevPosX = self.posX = x
-        self.prevPosY = self.posY = y
+        self.prevPosY = self.posY = y + self.yOffset
         self.prevPosZ = self.posZ = z
         self.rotationYaw = yaw
         self.rotationPitch = pitch
-        self.setPosition(x, y, z)
+        self.setPosition(self.posX, self.posY, self.posZ)
+
+    def getDistanceSqToEntity(self, entity):
+        cdef float xd = self.posX - entity.posX
+        cdef float yd = self.posY - entity.posY
+        cdef float zd = self.posZ - entity.posZ
+        return xd * xd + yd * yd + zd * zd
 
     def onCollideWithPlayer(self, player):
         pass
@@ -413,8 +435,8 @@ cdef class Entity:
         self.motionY = self.motionY
         self.motionZ += z
 
-    def attackEntityFrom(self, player, damage):
-        pass
+    def attackEntityFrom(self, entity, damage):
+        return False
 
     def canBeCollidedWith(self):
         return False
@@ -482,6 +504,9 @@ cdef class Entity:
     def getShadowSize(self):
         return self.height / 2.0
 
-    def entityDropItem(self, item, int amount):
+    def dropItemWithOffset(self, item, int amount):
         self._worldObj.spawnEntityInWorld(EntityItem(self._worldObj, self.posX, self.posY,
                                                      self.posZ, ItemStack(item, 1)))
+
+    def isEntityAlive(self):
+        return not self.isDead

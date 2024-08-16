@@ -11,7 +11,7 @@ class EntityLavaFX(EntityFX):
         self._motionY1 = self._rand.nextFloat() * 0.4 + 0.05
         self._particleRed = self._particleGreen = self._particleBlue = 1.0
         self._particleScale *= self._rand.nextFloat() * 2.0 + 0.2
-        self.__lavaScale = self._particleScale
+        self.__lavaParticleScale = self._particleScale
         self._particleMaxAge = int(16.0 / (random() * 0.8 + 0.2))
         self.noClip = False
         self._particleTextureIndex = 49
@@ -21,7 +21,7 @@ class EntityLavaFX(EntityFX):
 
     def renderParticle(self, t, a, xa, ya, za, xa2, ya2):
         age = (self._particleAge + a) / self._particleMaxAge
-        self._particleScale = self.__lavaScale * (1.0 - age * age)
+        self._particleScale = self.__lavaParticleScale * (1.0 - age * age)
         super().renderParticle(t, a, xa, ya, za, xa2, ya2)
 
     def onEntityUpdate(self):

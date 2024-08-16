@@ -1,4 +1,3 @@
-from mc.net.minecraft.client.player.EntityPlayerInput import EntityPlayerInput
 from mc.net.minecraft.client.effect.EntityPickupFX import EntityPickupFX
 from mc.net.minecraft.client.gui.container.GuiCrafting import GuiCrafting
 from mc.net.minecraft.client.gui.container.GuiChest import GuiChest
@@ -12,7 +11,11 @@ class EntityPlayerSP(EntityPlayer):
         super().__init__(world)
         self.__mc = mc
         self.movementInput = None
-        self._entityAI = EntityPlayerInput(self)
+
+    def _updatePlayerActionState(self):
+        self._moveStrafing = self.movementInput.moveStrafe
+        self._moveForward = self.movementInput.moveForward
+        self._isJumping = self.movementInput.jump
 
     def onLivingUpdate(self):
         self.movementInput.updatePlayerMoveState()

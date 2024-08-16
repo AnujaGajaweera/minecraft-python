@@ -1,6 +1,9 @@
 # cython: language_level=3
 
 from mc.net.minecraft.game.physics.MovingObjectPosition import MovingObjectPosition
+from mc.net.minecraft.game.physics.Vec3D import Vec3D
+from mc.net.minecraft.client.render.Tessellator cimport Tessellator
+from mc.net.minecraft.client.render.Tessellator import tessellator
 from pyglet import gl
 
 cdef class AxisAlignedBB:
@@ -34,6 +37,9 @@ cdef class AxisAlignedBB:
         return AxisAlignedBB(_x0, _y0, _z0, _x1, _y1, _z1)
 
     def expand(self, xa, ya, za):
+        if self.minY > self.maxY:
+            raise RuntimeError('NOOOOOO!')
+
         _x0 = self.minX - xa
         _y0 = self.minY - ya
         _z0 = self.minZ - za
@@ -133,9 +139,11 @@ cdef class AxisAlignedBB:
         self.maxZ += za
 
     cdef AxisAlignedBB copy(self):
-        return AxisAlignedBB(self.minX, self.minY, self.minZ, self.maxX, self.maxY, self.maxZ)
+        return AxisAlignedBB(self.minX, self.minY, self.minZ,
+                             self.maxX, self.maxY, self.maxZ)
 
-    def intersects(self, minX, minY, minZ, maxX, maxY, maxZ):
+    cdef bint intersects(self, float minX, float minY, float minZ,
+                         float maxX, float maxY, float maxZ):
         if maxX <= self.minX or minX >= self.maxX:
             return False
         if maxY <= self.minY or minY >= self.maxY:
@@ -146,30 +154,31 @@ cdef class AxisAlignedBB:
         return True
 
     def render(self):
-        gl.glBegin(gl.GL_LINE_STRIP)
-        gl.glVertex3f(self.minX, self.minY, self.minZ)
-        gl.glVertex3f(self.maxX, self.minY, self.minZ)
-        gl.glVertex3f(self.maxX, self.minY, self.maxZ)
-        gl.glVertex3f(self.minX, self.minY, self.maxZ)
-        gl.glVertex3f(self.minX, self.minY, self.minZ)
-        gl.glEnd()
-        gl.glBegin(gl.GL_LINE_STRIP)
-        gl.glVertex3f(self.minX, self.maxY, self.minZ)
-        gl.glVertex3f(self.maxX, self.maxY, self.minZ)
-        gl.glVertex3f(self.maxX, self.maxY, self.maxZ)
-        gl.glVertex3f(self.minX, self.maxY, self.maxZ)
-        gl.glVertex3f(self.minX, self.maxY, self.minZ)
-        gl.glEnd()
-        gl.glBegin(gl.GL_LINES)
-        gl.glVertex3f(self.minX, self.minY, self.minZ)
-        gl.glVertex3f(self.minX, self.maxY, self.minZ)
-        gl.glVertex3f(self.maxX, self.minY, self.minZ)
-        gl.glVertex3f(self.maxX, self.maxY, self.minZ)
-        gl.glVertex3f(self.maxX, self.minY, self.maxZ)
-        gl.glVertex3f(self.maxX, self.maxY, self.maxZ)
-        gl.glVertex3f(self.minX, self.minY, self.maxZ)
-        gl.glVertex3f(self.minX, self.maxY, self.maxZ)
-        gl.glEnd()
+        cdef Tessellator t = tessellator
+        t.startDrawing(gl.GL_LINE_STRIP)
+        t.addVertex(self.minX, self.minY, self.minZ)
+        t.addVertex(self.maxX, self.minY, self.minZ)
+        t.addVertex(self.maxX, self.minY, self.maxZ)
+        t.addVertex(self.minX, self.minY, self.maxZ)
+        t.addVertex(self.minX, self.minY, self.minZ)
+        t.draw()
+        t.startDrawing(gl.GL_LINE_STRIP)
+        t.addVertex(self.minX, self.maxY, self.minZ)
+        t.addVertex(self.maxX, self.maxY, self.minZ)
+        t.addVertex(self.maxX, self.maxY, self.maxZ)
+        t.addVertex(self.minX, self.maxY, self.maxZ)
+        t.addVertex(self.minX, self.maxY, self.minZ)
+        t.draw()
+        t.startDrawing(gl.GL_LINES)
+        t.addVertex(self.minX, self.minY, self.minZ)
+        t.addVertex(self.minX, self.maxY, self.minZ)
+        t.addVertex(self.maxX, self.minY, self.minZ)
+        t.addVertex(self.maxX, self.maxY, self.minZ)
+        t.addVertex(self.maxX, self.minY, self.maxZ)
+        t.addVertex(self.maxX, self.maxY, self.maxZ)
+        t.addVertex(self.minX, self.minY, self.maxZ)
+        t.addVertex(self.minX, self.maxY, self.maxZ)
+        t.draw()
 
     def getSize(self):
         xd = self.maxX - self.minX
@@ -203,15 +212,15 @@ cdef class AxisAlignedBB:
         if vecX0:
             vec38 = vecX0
 
-        if vecX1 and (not vec38 or vec1.squaredDistanceTo(vecX1) < vec1.squaredDistanceTo(vec38)):
+        if vecX1 and (not vec38 or vec1.squareDistanceTo(vecX1) < vec1.squareDistanceTo(vec38)):
             vec38 = vecX1
-        if vecY0 and (not vec38 or vec1.squaredDistanceTo(vecY0) < vec1.squaredDistanceTo(vec38)):
+        if vecY0 and (not vec38 or vec1.squareDistanceTo(vecY0) < vec1.squareDistanceTo(vec38)):
             vec38 = vecY0
-        if vecY1 and (not vec38 or vec1.squaredDistanceTo(vecY1) < vec1.squaredDistanceTo(vec38)):
+        if vecY1 and (not vec38 or vec1.squareDistanceTo(vecY1) < vec1.squareDistanceTo(vec38)):
             vec38 = vecY1
-        if vecZ0 and (not vec38 or vec1.squaredDistanceTo(vecZ0) < vec1.squaredDistanceTo(vec38)):
+        if vecZ0 and (not vec38 or vec1.squareDistanceTo(vecZ0) < vec1.squareDistanceTo(vec38)):
             vec38 = vecZ0
-        if vecZ1 and (not vec38 or vec1.squaredDistanceTo(vecZ1) < vec1.squaredDistanceTo(vec38)):
+        if vecZ1 and (not vec38 or vec1.squareDistanceTo(vecZ1) < vec1.squareDistanceTo(vec38)):
             vec38 = vecZ1
 
         if not vec38:
@@ -244,3 +253,8 @@ cdef class AxisAlignedBB:
     cdef bint __isVecInXY(self, za):
         return False if not za else za.xCoord >= self.minX and za.xCoord <= self.maxX and \
                za.yCoord >= self.minY and za.yCoord <= self.maxY
+
+    def getAverageEdgeLength(self):
+        return Vec3D((self.maxX + self.minX) / 2.0,
+                     (self.maxY + self.minY) / 2.0,
+                     (self.maxZ + self.minZ) / 2.0)

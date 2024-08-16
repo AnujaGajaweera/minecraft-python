@@ -6,7 +6,7 @@ class BlockOreBlock(Block):
     def __init__(self, blocks, blockId, tex):
         super().__init__(blocks, blockId, tex, Material.iron)
 
-    def getBlockTexture(self, face):
+    def getBlockTextureFromSide(self, face):
         if face == 1:
             return self.blockIndexInTexture - 16
         elif face == 0:

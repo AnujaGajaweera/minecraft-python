@@ -40,6 +40,7 @@ class RenderArrow(Render):
         for i in range(4):
             gl.glRotatef(90.0, 1.0, 0.0, 0.0)
             gl.glNormal3f(0.0, 0.0, 0.05625)
+            t.startDrawingQuads()
             t.addVertexWithUV(-8.0, -2.0, 0.0, 0.0, 0.0)
             t.addVertexWithUV(8.0, -2.0, 0.0, 0.5, 0.0)
             t.addVertexWithUV(8.0, 2.0, 0.0, 0.5, 0.15625)

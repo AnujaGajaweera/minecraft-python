@@ -1,7 +1,7 @@
 from mc.JavaUtils import Random
 
 class Item:
-    TOTAL_STACK_SIZE = 100
+    TOTAL_STACK_SIZE = 64
     MAX_DAMAGE = 32
     _rand = Random()
 
@@ -20,7 +20,7 @@ class Item:
         return self._iconIndex
 
     def onItemUse(self, stack, world, x, y, z, sideHit):
-        pass
+        return False
 
     def getStrVsBlock(self, block):
         return 1.0

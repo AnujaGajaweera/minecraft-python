@@ -1,4 +1,5 @@
 from mc.net.minecraft.game.entity.Entity import Entity
+from mc.net.minecraft.game.item.ItemStack import ItemStack
 from mc.net.minecraft.game.level.block.Blocks import blocks
 from mc.net.minecraft.game.level.material.Material import Material
 from mc.JavaUtils import random
@@ -9,8 +10,17 @@ import math
 
 class EntityItem(Entity):
 
-    def __init__(self, world, x, y, z, item):
+    def __init__(self, world, x=None, y=None, z=None, item=None):
         super().__init__(world)
+        self.age = 0
+        self.delayBeforeCanPickup = 0
+        self.__health = 5
+        self.__unknownEntityItemInt = 0
+        self.hoverStart = random() * math.pi * 2.0
+        if x is None:
+            self.item = ItemStack(0)
+            return
+
         self.setSize(0.25, 0.25)
         self.yOffset = self.height / 2.0
         self.setPosition(x, y, z)
@@ -20,11 +30,6 @@ class EntityItem(Entity):
         self.motionY = 0.2
         self.motionZ = random() * 0.2 - 0.1
         self._canTriggerWalking = False
-        self.__unknownEntityItemInt = 0
-        self.age = 0
-        self.delayBeforeCanPickup = 0
-        self.__health = 5
-        self.hoverStart = random() * math.pi * 2.0
 
     def onEntityUpdate(self):
         super().onEntityUpdate()
@@ -116,17 +121,17 @@ class EntityItem(Entity):
             self.setEntityDead()
 
     def attackEntityFrom(self, entity, damage):
-        pass
+        return False
 
     def _writeEntityToNBT(self, compound):
-        compound['Health'] = Byte(self.__health)
+        compound['Health'] = Short(self.__health)
         compound['Age'] = Short(self.age)
         compound['Item'] = self.item.writeToNBT(Compound({}))
 
     def _readEntityFromNBT(self, compound):
         self.__health = compound['Health'].real & 255
         self.age = compound['Age'].real
-        self.item = ItemStack(dict(compound['Item']))
+        self.item = ItemStack(compound['Item'])
 
     def _getEntityString(self):
         return 'Item'

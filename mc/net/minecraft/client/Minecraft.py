@@ -27,7 +27,6 @@ pyglet.resource.reindex()
 
 from mc.net.minecraft.client import MinecraftError
 from mc.net.minecraft.client.Timer import Timer
-from mc.net.minecraft.client.GuiMainTitle import GuiMainTitle
 from mc.net.minecraft.client.GameSettings import GameSettings
 from mc.net.minecraft.client.OpenGlCapsChecker import OpenGlCapsChecker
 from mc.net.minecraft.client.LoadingScreenRenderer import LoadingScreenRenderer
@@ -39,6 +38,7 @@ from mc.net.minecraft.game.entity.EntityLiving import EntityLiving
 from mc.net.minecraft.client.model.ModelBiped import ModelBiped
 from mc.net.minecraft.client.player.EntityPlayerSP import EntityPlayerSP
 from mc.net.minecraft.client.player.MovementInputFromOptions import MovementInputFromOptions
+from mc.net.minecraft.client.GuiMainMenu import GuiMainMenu
 from mc.net.minecraft.client.gui.ScaledResolution import ScaledResolution
 from mc.net.minecraft.client.gui.FontRenderer import FontRenderer
 from mc.net.minecraft.client.gui.GuiErrorScreen import GuiErrorScreen
@@ -75,7 +75,7 @@ import gc
 GL_DEBUG = False
 
 class Minecraft(window.Window):
-    VERSION_STRING = '0.31'
+    VERSION_STRING = 'Minecraft Indev'
     theWorld = None
     renderGlobal = None
     thePlayer = None
@@ -92,19 +92,16 @@ class Minecraft(window.Window):
 
     ksh = window.key.KeyStateHandler()
     msh = window.mouse.MouseStateHandler()
-    ingameFocus = False
     mouseX = 0
     mouseY = 0
 
     options = None
 
-    screenChanged = False
-
     def __init__(self, fullscreen, creative, *args, **kwargs):
         super().__init__(*args, **kwargs)
         ModelBiped(0.0)
 
-        self.__fullScreen = fullscreen
+        self.__fullscreen = fullscreen
 
         if creative:
             self.playerController = PlayerControllerCreative(self)
@@ -128,10 +125,13 @@ class Minecraft(window.Window):
         self.__textureWaterFX = TextureWaterFX()
         self.__textureLavaFX = TextureLavaFX()
 
+        self.__active = True
         self.running = False
         self.debug = ''
 
         self.__prevFrameTime = 0
+
+        self.inGameHasFocus = False
 
         self.push_handlers(self.ksh)
         self.push_handlers(self.msh)
@@ -141,80 +141,73 @@ class Minecraft(window.Window):
 
     def displayGuiScreen(self, screen):
         if not isinstance(self.currentScreen, GuiErrorScreen):
-            if self.currentScreen or screen:
-                self.screenChanged = True
             if self.currentScreen:
                 self.currentScreen.onGuiClosed()
 
             if not screen and not self.theWorld:
-                screen = GuiMainTitle()
+                screen = GuiMainMenu()
             elif not screen and self.thePlayer.health <= 0:
                 screen = GuiGameOver()
 
             self.currentScreen = screen
             if screen:
-                self.__releaseMouse()
+                self.setIngameNotInFocus()
                 scaledRes = ScaledResolution(self.width, self.height)
                 screenWidth = scaledRes.getScaledWidth()
                 screenHeight = scaledRes.getScaledHeight()
                 screen.setWorldAndResolution(self, screenWidth, screenHeight)
                 self.skipRenderWorld = False
             else:
-                self.grabMouse()
+                self.setIngameFocus()
         else:
-            self.__releaseMouse()
+            self.setIngameNotInFocus()
 
     def destroy(self):
         self.sndManager.closeMinecraft()
 
     def isActive(self):
-        return not self.isGamePaused
+        return self.__active
 
     def on_close(self):
         self.running = False
 
     def on_activate(self):
-        self.isGamePaused = False
+        self.__active = True
 
         # Remove this hack when the window boundary issue is fixed upstream:
-        if self.ingameFocus and compat_platform == 'win32':
+        if self.inGameHasFocus and compat_platform == 'win32':
             self._update_clipped_cursor()
 
     def on_deactivate(self):
-        self.isGamePaused = True
-        self.__releaseMouse()
+        self.__active = False
+        self.setIngameNotInFocus()
 
     def on_mouse_press(self, x, y, button, modifiers):
         try:
             if self.currentScreen:
                 self.currentScreen.handleMouseInput(button)
+                return
 
-            if self.screenChanged:
-                self.screenChanged = False
-                if compat_platform != 'darwin':
-                    return
+            if not self.inGameHasFocus:
+                self.setIngameFocus()
+            elif button == window.mouse.LEFT:
+                self.__clickMouse(0)
+                self.__prevFrameTime = self.__ticksRan
+            elif button == window.mouse.RIGHT:
+                self.__clickMouse(1)
+                self.__prevFrameTime = self.__ticksRan
+            elif button == window.mouse.MIDDLE and self.objectMouseOver:
+                block = self.theWorld.getBlockId(self.objectMouseOver.blockX,
+                                                 self.objectMouseOver.blockY,
+                                                 self.objectMouseOver.blockZ)
+                if block == blocks.grass.blockID:
+                    block = blocks.dirt.blockID
+                elif block == blocks.stairDouble.blockID:
+                    block = blocks.stairSingle.blockID
+                elif block == blocks.bedrock.blockID:
+                    block = blocks.stone.blockID
 
-            if not self.currentScreen:
-                if not self.ingameFocus:
-                    self.grabMouse()
-                elif button == window.mouse.LEFT:
-                    self.__clickMouse(0)
-                    self.__prevFrameTime = self.__ticksRan
-                elif button == window.mouse.RIGHT:
-                    self.__clickMouse(1)
-                    self.__prevFrameTime = self.__ticksRan
-                elif button == window.mouse.MIDDLE and self.objectMouseOver:
-                    block = self.theWorld.getBlockId(self.objectMouseOver.blockX,
-                                                     self.objectMouseOver.blockY,
-                                                     self.objectMouseOver.blockZ)
-                    if block == blocks.grass.blockID:
-                        block = blocks.dirt.blockID
-                    elif block == blocks.stairDouble.blockID:
-                        block = blocks.stairSingle.blockID
-                    elif block == blocks.bedrock.blockID:
-                        block = blocks.stone.blockID
-
-                    self.thePlayer.inventory.getFirstEmptyStack(block)
+                self.thePlayer.inventory.getFirstEmptyStack(block)
         except Exception as e:
             print(traceback.format_exc())
             self.displayGuiScreen(GuiErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
@@ -231,7 +224,7 @@ class Minecraft(window.Window):
         try:
             self.mouseX = x
             self.mouseY = y
-            if not self.ingameFocus:
+            if not self.inGameHasFocus:
                 return
 
             xo = dx
@@ -253,13 +246,7 @@ class Minecraft(window.Window):
 
             if self.currentScreen:
                 self.currentScreen.handleKeyboardEvent(key=symbol)
-
-            if self.screenChanged:
-                self.screenChanged = False
-                if compat_platform != 'darwin':
-                    return
-
-            if not self.currentScreen or self.currentScreen.allowUserInput:
+            elif not self.currentScreen or self.currentScreen.allowUserInput:
                 self.thePlayer.movementInput.checkKeyForMovementInput(symbol, True)
 
                 if symbol == window.key.ESCAPE:
@@ -308,11 +295,6 @@ class Minecraft(window.Window):
 
     def on_text(self, text):
         try:
-            if self.screenChanged:
-                self.screenChanged = False
-                if compat_platform != 'darwin':
-                    return
-
             if self.currentScreen:
                 self.currentScreen.handleKeyboardEvent(char=text)
         except Exception as e:
@@ -347,7 +329,10 @@ class Minecraft(window.Window):
             self.entityRenderer.updateCameraAndRender(self.__timer.renderPartialTicks)
             if self.options.limitFramerate:
                 time.sleep(0.005)
-        except Exception as e:
+
+            self.isGamePaused = self.currentScreen is not None and \
+                                self.currentScreen.doesGuiPauseGame()
+        except OSError as e:
             print(traceback.format_exc())
             self.displayGuiScreen(GuiErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
 
@@ -355,10 +340,10 @@ class Minecraft(window.Window):
         self.running = True
         self.__dummyWorldRenderer = WorldRenderer(None, 0, 0, 0, 0, 0, True)
 
-        self.set_fullscreen(self.__fullScreen)
+        self.set_fullscreen(self.__fullscreen)
         self.set_visible(True)
 
-        if not self.__fullScreen:
+        if not self.__fullscreen:
             display = canvas.Display()
             screen = display.get_default_screen()
             locationX = screen.width // 2 - self.width // 2
@@ -429,7 +414,7 @@ class Minecraft(window.Window):
             world.setLevel(8, 8, 8, bytearray(512))
             self.setLevel(level)
         elif not self.theWorld:
-            self.displayGuiScreen(GuiMainTitle())
+            self.displayGuiScreen(GuiMainMenu())
 
         self.effectRenderer = EffectRenderer(self.theWorld, self.renderEngine)
 
@@ -437,15 +422,14 @@ class Minecraft(window.Window):
         ThreadDownloadSkin(self).start()
 
         lastTime = getMillis()
-        frames = -2
+        frames = 0
         try:
             while self.running:
                 clock.tick()
                 self.dispatch_events()
                 self.dispatch_event('on_draw')
                 app.platform_event_loop.step(timeout=0.001)
-                if frames >= 0:
-                    self.flip()
+                self.flip()
 
                 frames += 1
                 while getMillis() >= lastTime + 1000:
@@ -458,23 +442,23 @@ class Minecraft(window.Window):
         finally:
             self.destroy()
 
-    def grabMouse(self):
-        if self.ingameFocus:
+    def setIngameFocus(self):
+        if not self.isActive() or self.inGameHasFocus:
             return
 
-        self.ingameFocus = True
+        self.inGameHasFocus = True
         self.set_exclusive_mouse(True)
         self.displayGuiScreen(None)
         self.__prevFrameTime = self.__ticksRan + 10000
 
-    def __releaseMouse(self):
-        if not self.ingameFocus:
+    def setIngameNotInFocus(self):
+        if not self.inGameHasFocus:
             return
 
         if self.thePlayer:
             self.thePlayer.movementInput.resetKeyState()
 
-        self.ingameFocus = False
+        self.inGameHasFocus = False
         self.set_exclusive_mouse(False)
         self.set_mouse_position(self.width // 2, self.height // 2)
 
@@ -491,10 +475,13 @@ class Minecraft(window.Window):
             self.entityRenderer.itemRenderer.swingItem()
             self.entityRenderer.updateRenderer()
         elif editMode == 1 and item:
+            size = item.stackSize
             stack = item.getItem().onItemRightClick(item, self.theWorld, self.thePlayer)
-            if stack != item or stack and stack.stackSize != item.stackSize:
+            if stack != item or stack and stack.stackSize != size:
                 self.thePlayer.inventory.mainInventory[self.thePlayer.inventory.currentItem] = stack
                 self.entityRenderer.itemRenderer.resetEquippedProgress()
+                if stack.stackSize == 0:
+                    self.thePlayer.inventory.mainInventory[self.thePlayer.inventory.currentItem] = None
 
         if not self.objectMouseOver:
             if editMode == 0 and not isinstance(self.playerController, PlayerControllerCreative):
@@ -539,7 +526,9 @@ class Minecraft(window.Window):
                 return
 
             prevSize = item.stackSize
-            item.getItem().onItemUse(item, self.theWorld, x, y, z, sideHit)
+            if item.getItem().onItemUse(item, self.theWorld, x, y, z, sideHit):
+                self.entityRenderer.itemRenderer.swingItem()
+
             if item.stackSize == 0:
                 self.thePlayer.inventory.mainInventory[self.thePlayer.inventory.currentItem] = None
                 return
@@ -549,16 +538,16 @@ class Minecraft(window.Window):
 
     def toggleFullscreen(self):
         try:
-            self.__fullScreen = not self.__fullScreen
+            self.__fullscreen = not self.__fullscreen
             print('Toggle fullscreen!')
-            self.__releaseMouse()
-            self.set_fullscreen(self.__fullScreen)
+            self.setIngameNotInFocus()
+            self.set_fullscreen(self.__fullscreen)
             time.sleep(1)
-            if self.__fullScreen:
-                self.grabMouse()
+            if self.__fullscreen:
+                self.setIngameFocus()
 
             if self.currentScreen:
-                self.__releaseMouse()
+                self.setIngameNotInFocus()
                 self.__resize(self.width, self.height)
 
             print(f'Size: {self.width}, {self.height}')
@@ -587,15 +576,15 @@ class Minecraft(window.Window):
 
             if not self.currentScreen:
                 if self.msh[window.mouse.LEFT] and \
-                   self.__ticksRan - self.__prevFrameTime >= self.__timer.ticksPerSecond / 4.0 and self.ingameFocus:
+                   self.__ticksRan - self.__prevFrameTime >= self.__timer.ticksPerSecond / 4.0 and self.inGameHasFocus:
                     self.__clickMouse(0)
                     self.__prevFrameTime = self.__ticksRan
                 elif self.msh[window.mouse.RIGHT] and \
-                     self.__ticksRan - self.__prevFrameTime >= self.__timer.ticksPerSecond / 4.0 and self.ingameFocus:
+                     self.__ticksRan - self.__prevFrameTime >= self.__timer.ticksPerSecond / 4.0 and self.inGameHasFocus:
                     self.__clickMouse(1)
                     self.__prevFrameTime = self.__ticksRan
 
-            leftHeld = not self.currentScreen and self.msh[window.mouse.LEFT] and self.ingameFocus
+            leftHeld = not self.currentScreen and self.msh[window.mouse.LEFT] and self.inGameHasFocus
             if not self.playerController.isInTestMode and self.__leftClickCounter <= 0:
                 if leftHeld and self.objectMouseOver and self.objectMouseOver.typeOfHit == 0:
                     x = self.objectMouseOver.blockX
@@ -612,18 +601,22 @@ class Minecraft(window.Window):
         if not self.theWorld:
             return
 
-        self.entityRenderer.updateRenderer()
-        self.renderGlobal.updateClouds()
+        self.theWorld.difficultySetting = self.options.difficulty
+        if not self.isGamePaused:
+            self.entityRenderer.updateRenderer()
+        if not self.isGamePaused:
+            self.renderGlobal.updateClouds()
         if not self.isGamePaused:
             self.theWorld.updateEntities()
             self.theWorld.tick()
+        if not self.isGamePaused:
+            self.theWorld.randomDisplayUpdates(int(self.thePlayer.posX),
+                                               int(self.thePlayer.posY),
+                                               int(self.thePlayer.posZ))
+        if not self.isGamePaused:
+            self.effectRenderer.updateEffects()
 
-        self.theWorld.randomDisplayUpdates(int(self.thePlayer.posX),
-                                           int(self.thePlayer.posY),
-                                           int(self.thePlayer.posZ))
-        self.effectRenderer.updateEffects()
-
-    def generateNewLevel(self, size, shape, levelType, theme):
+    def generateLevel(self, size, shape, levelType, theme):
         name = self.session.username if self.session else 'anonymous'
         levelGen = LevelGenerator(self.loadingScreen)
         levelGen.islandGen = levelType == 1
@@ -680,7 +673,7 @@ class Minecraft(window.Window):
         gc.collect()
 
 if __name__ == '__main__':
-    fullScreen = False
+    fullscreen = False
     server = None
     port = None
     name = 'guest'
@@ -688,12 +681,12 @@ if __name__ == '__main__':
     creative = False
     for i, arg in enumerate(sys.argv):
         if arg == '-fullscreen':
-            fullScreen = True
+            fullscreen = True
         elif arg == '-creative':
             creative = True
 
-    game = Minecraft(fullScreen, creative, width=854, height=480,
+    game = Minecraft(fullscreen, creative, width=854, height=480,
                      resizable=True, vsync=False, visible=False,
-                     caption='Minecraft 0.31')
+                     caption='Minecraft Indev')
     game.session = Session(name, sessionId)
     game.run()

@@ -9,9 +9,9 @@ cdef class EntityMapSlot:
         self.__entityMap = entityMap
 
     cdef EntityMapSlot init(self, float x, float y, float z):
-        self.posX = <int>(x // 16)
-        self.posY = <int>(y // 16)
-        self.posZ = <int>(z // 16)
+        self.posX = <int>(x // 8)
+        self.posY = <int>(y // 8)
+        self.posZ = <int>(z // 8)
         if self.posX < 0:
             self.posX = 0
         if self.posY < 0:

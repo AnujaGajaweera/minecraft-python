@@ -26,26 +26,27 @@ class Gui:
 
     @staticmethod
     def _drawGradientRect(x0, y0, x1, y1, col1, col2):
-        f10 = ((col1 % 0x100000000) >> 24) / 255.0
-        f11 = (col1 >> 16 & 255) / 255.0
-        f6 = (col1 >> 8 & 255) / 255.0
-        f12 = (col1 & 255) / 255.0
-        f7 = ((col2 % 0x100000000) >> 24) / 255.0
-        f8 = (col2 >> 16 & 255) / 255.0
-        f9 = (col2 >> 8 & 255) / 255.0
-        f13 = (col2 & 255) / 255.0
+        a1 = ((col1 % 0x100000000) >> 24) / 255.0
+        r1 = (col1 >> 16 & 255) / 255.0
+        g1 = (col1 >> 8 & 255) / 255.0
+        b1 = (col1 & 255) / 255.0
+        a2 = ((col2 % 0x100000000) >> 24) / 255.0
+        r2 = (col2 >> 16 & 255) / 255.0
+        g2 = (col2 >> 8 & 255) / 255.0
+        b2 = (col2 & 255) / 255.0
         gl.glDisable(gl.GL_TEXTURE_2D)
         gl.glEnable(gl.GL_BLEND)
         gl.glDisable(gl.GL_ALPHA_TEST)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
-        gl.glBegin(gl.GL_QUADS)
-        gl.glColor4f(f11, f6, f12, f10)
-        gl.glVertex2f(x1, y0)
-        gl.glVertex2f(x0, y0)
-        gl.glColor4f(f8, f9, f13, f7)
-        gl.glVertex2f(x0, y1)
-        gl.glVertex2f(x1, y1)
-        gl.glEnd()
+        t = tessellator
+        t.startDrawingQuads()
+        t.setColorRGBA_F(r1, g1, b1, a1)
+        t.addVertex(x1, y0, 0.0)
+        t.addVertex(x0, y0, 0.0)
+        t.setColorRGBA_F(r2, g2, b2, a2)
+        t.addVertex(x0, y1, 0.0)
+        t.addVertex(x1, y1, 0.0)
+        t.draw()
         gl.glDisable(gl.GL_BLEND)
         gl.glEnable(gl.GL_ALPHA_TEST)
         gl.glEnable(gl.GL_TEXTURE_2D)

@@ -11,7 +11,7 @@ class RenderItem(Render):
 
     def __init__(self):
         super().__init__()
-        self.__renderBlocks = RenderBlocks(tessellator)
+        self.__renderBlocks = RenderBlocks()
         self.__random = Random()
         self._shadowSize = 0.15
         self._shadowOpaque = 12.0 / 16.0
@@ -53,7 +53,7 @@ class RenderItem(Render):
             t.draw()
             gl.glEnable(gl.GL_LIGHTING)
 
-    def renderItemDamage(self, fontRenderer, stack, width, height):
+    def renderItemOverlayIntoGUI(self, fontRenderer, stack, width, height):
         if not stack:
             return
 
@@ -75,16 +75,16 @@ class RenderItem(Render):
             t = tessellator
             z0 = 255 - z1 << 16 | z1 << 8
             z1 = (255 - z1) // 4 << 16 | 16128
-            self.__drawToolDamage(t, width + 2, height + 13, 13, 2, 0)
-            self.__drawToolDamage(t, width + 2, height + 13, 12, 1, z1)
-            self.__drawToolDamage(t, width + 2, height + 13, x, 1, z0)
+            self.__renderQuad(t, width + 2, height + 13, 13, 2, 0)
+            self.__renderQuad(t, width + 2, height + 13, 12, 1, z1)
+            self.__renderQuad(t, width + 2, height + 13, x, 1, z0)
             gl.glEnable(gl.GL_LIGHTING)
             gl.glEnable(gl.GL_DEPTH_TEST)
             gl.glEnable(gl.GL_TEXTURE_2D)
             gl.glColor4f(1.0, 1.0, 1.0, 1.0)
 
     @staticmethod
-    def __drawToolDamage(t, width, height, x, y, z):
+    def __renderQuad(t, width, height, x, y, z):
         t.startDrawingQuads()
         t.setColorOpaque_I(z)
         t.addVertex(width, height, 0.0)

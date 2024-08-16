@@ -1,5 +1,4 @@
 from mc.net.minecraft.game.level.material.Material import Material
-from mc.net.minecraft.game.entity.AILiving import AILiving
 from mc.net.minecraft.game.entity.EntityLiving import EntityLiving
 from mc.net.minecraft.game.entity.animal.EntityPig import EntityPig
 from mc.net.minecraft.game.entity.animal.EntitySheep import EntitySheep
@@ -7,6 +6,7 @@ from mc.net.minecraft.game.entity.monster.EntityCreeper import EntityCreeper
 from mc.net.minecraft.game.entity.monster.EntitySkeleton import EntitySkeleton
 from mc.net.minecraft.game.entity.monster.EntitySpider import EntitySpider
 from mc.net.minecraft.game.entity.monster.EntityZombie import EntityZombie
+from mc.net.minecraft.game.entity.monster.EntityMob import EntityMob
 from mc.JavaUtils import random
 
 class MobSpawner:
@@ -15,15 +15,26 @@ class MobSpawner:
         self.__worldObj = world
 
     def spawnMobs(self):
-        size = self.__worldObj.width * self.__worldObj.length * self.__worldObj.height // 64 // 64 // 64
+        size = self.__worldObj.width * self.__worldObj.length * \
+               self.__worldObj.height * 20 // 64 // 64 // 64
+        size // 4
+        if self.__worldObj.difficultySetting == 0:
+            size //= 4
+        elif self.__worldObj.difficultySetting == 1:
+            size = size * 3 // 4
+        elif self.__worldObj.difficultySetting == 2:
+            size = (size << 2) // 4
+        elif self.__worldObj.difficultySetting == 3:
+            size = size * 5 // 4
+
         if self.__worldObj.rand.nextInt(100) < size and \
-           self.__worldObj.entitiesInLevelList(EntityLiving) < size * 20:
+           self.__worldObj.entitiesInLevelList(EntityLiving) < size:
             self.spawnMob(size, self.__worldObj.playerEntity, None)
 
     def spawnMob(self, count, entity, loader):
         mobs = 0
         for i in range(count):
-            self.__worldObj.rand.nextInt(6)
+            choice = self.__worldObj.rand.nextInt(7)
             blockX = self.__worldObj.rand.nextInt(self.__worldObj.width)
             blockY = int(min(self.__worldObj.rand.nextFloat(),
                              self.__worldObj.rand.nextFloat()) * self.__worldObj.height)
@@ -32,7 +43,7 @@ class MobSpawner:
                self.__worldObj.getBlockMaterial(blockX, blockY, blockZ) == Material.air and \
                (not self.__worldObj.isHalfLit(blockX, blockY, blockZ) or \
                 self.__worldObj.rand.nextInt(5) == 0):
-                for j in range(8):
+                for j in range(4):
                     xx = blockX
                     yy = blockY
                     zz = blockZ
@@ -61,7 +72,6 @@ class MobSpawner:
                                 continue
 
                             mob = None
-                            choice = int(random() * 7.0)
                             if choice == 0:
                                 mob = EntitySkeleton(self.__worldObj)
                             elif choice == 1:
@@ -75,12 +85,14 @@ class MobSpawner:
                             elif choice == 6:
                                 mob = EntityZombie(self.__worldObj)
 
-                            if not mob:
+                            if isinstance(mob, EntityMob) and self.__worldObj.difficultySetting == 0:
+                                mob = None
+
+                            if not mob or not mob.getCanSpawnHere(x, y, z):
                                 continue
 
                             yaw = self.__worldObj.rand.nextFloat() * 360.0
                             mob.setPositionAndRotation(x, y, z, yaw, 0.0)
-                            mob.setEntityAI(AILiving())
                             if self.__worldObj.checkIfAABBIsClearSpawn(mob.boundingBox):
                                 mobs += 1
                                 self.__worldObj.spawnEntityInWorld(mob)

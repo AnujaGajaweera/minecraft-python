@@ -10,7 +10,7 @@ class BlockChest(BlockContainer):
         self.blockIndexInTexture = 26
         self.__random = Random()
 
-    def getBlockTextureFromSideAndMetadata(self, world, x, y, z, layer):
+    def getBlockTexture(self, world, x, y, z, layer):
         if layer == 1:
             return self.blockIndexInTexture - 1
         elif layer == 0:
@@ -105,7 +105,7 @@ class BlockChest(BlockContainer):
         else:
             return self.blockIndexInTexture
 
-    def getBlockTexture(self, face):
+    def getBlockTextureFromSide(self, face):
         if face == 1:
             return self.blockIndexInTexture - 1
         elif face == 0:
@@ -128,16 +128,16 @@ class BlockChest(BlockContainer):
 
         if chests > 1:
             return False
-        elif self.__chestsAround(world, x - 1, y, z):
+        elif self.__isThereANeighborChest(world, x - 1, y, z):
             return False
-        elif self.__chestsAround(world, x + 1, y, z):
+        elif self.__isThereANeighborChest(world, x + 1, y, z):
             return False
-        elif self.__chestsAround(world, x, y, z - 1):
+        elif self.__isThereANeighborChest(world, x, y, z - 1):
             return False
         else:
-            return not self.__chestsAround(world, x, y, z + 1)
+            return not self.__isThereANeighborChest(world, x, y, z + 1)
 
-    def __chestsAround(self, world, x, y, z):
+    def __isThereANeighborChest(self, world, x, y, z):
         if world.getBlockId(x, y, z) != self.blockID:
             return False
         elif world.getBlockId(x - 1, y, z) == self.blockID:

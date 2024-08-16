@@ -2,7 +2,7 @@
 
 cimport cython
 
-from libc.math cimport sin
+from libc.math cimport sqrt, sin
 
 from mc.net.minecraft.game.level.World cimport World
 from mc.net.minecraft.game.level.block.Blocks import blocks
@@ -15,7 +15,7 @@ from mc.net.minecraft.client.effect.EntitySplashFX import EntitySplashFX
 from mc.net.minecraft.client.effect.EntitySmokeFX import EntitySmokeFX
 from mc.net.minecraft.client.effect.EntityFlameFX import EntityFlameFX
 from mc.net.minecraft.client.effect.EntityLavaFX import EntityLavaFX
-from mc.net.minecraft.client.render.Frustum cimport Frustum
+from mc.net.minecraft.client.render.camera.Frustum cimport Frustum
 from mc.net.minecraft.client.render.EntitySorter import EntitySorter
 from mc.net.minecraft.client.render.Tessellator import tessellator
 from mc.net.minecraft.client.render.WorldRenderer cimport WorldRenderer
@@ -31,6 +31,16 @@ from functools import cmp_to_key
 cdef class RenderGlobal:
     CHUNK_SIZE = 16
 
+    def __cinit__(self):
+        self.__countEntitiesTotal = 0
+        self.__countEntitiesRendered = 0
+        self.__countEntitiesHidden = 0
+        self.__renderersLoaded = 0
+        self.__renderersBeingClipped = 0
+        self.__renderersBeingOccluded = 0
+        self.__renderersBeingRendered = 0
+        self.__cloudOffsetX = 0
+
     def __init__(self, minecraft, renderEngine):
         self.__mc = minecraft
         self.__renderEngine = renderEngine
@@ -42,27 +52,40 @@ cdef class RenderGlobal:
         self.__worldRenderers = []
         self.__globalRenderBlocks = None
         RenderManager.instance = RenderManager()
-        self.__cloudOffsetX = 0
         self.__prevSortX = -9999.0
         self.__prevSortY = -9999.0
         self.__prevSortZ = -9999.0
         self.damagePartialTime = 0.0
         self.__glGenList = gl.glGenLists(2)
         self.__glRenderListBase = gl.glGenLists(786432)
+        self.__occlusionResult = BufferUtils.createIntBuffer(64)
+        self.__occlusionEnabled = gl.gl_info.have_extension('GL_ARB_occlusion_query')
+        if self.__occlusionEnabled:
+            self.__occlusionResult.clear()
+            self.__occlusionResult.glGetInteger(gl.GL_QUERY_COUNTER_BITS)
+            if self.__occlusionResult.getAt(0) == 0:
+                self.__occlusionEnabled = False
+                return
+
+            self.__glOcclusionQueryBase = BufferUtils.createIntBuffer(262144)
+            self.__glOcclusionQueryBase.clear()
+            self.__glOcclusionQueryBase.position(0)
+            self.__glOcclusionQueryBase.limit(262144)
+            self.__glOcclusionQueryBase.glGenQueriesARB()
 
     def changeWorld(self, World world):
         if self.__worldObj:
             self.__worldObj.removeWorldAccess(self)
 
-        RenderManager.instance.setWorld(world)
+        RenderManager.instance.set(world)
         self.__worldObj = world
-        self.__globalRenderBlocks = RenderBlocks(self.__t, world)
+        self.__globalRenderBlocks = RenderBlocks(world)
         if world:
             world.addWorldAccess(self)
             self.loadRenderers()
 
     def loadRenderers(self):
-        cdef int lists, x, y, z, i, s, d, xx, zz
+        cdef int lists, chunks, x, y, z, i, s, d, xx, zz
         cdef float groundLevel, minX, minZ, waterLevel, yy
         cdef WorldRenderer chunk
 
@@ -77,6 +100,7 @@ cdef class RenderGlobal:
         self.__sortedWorldRenderers = [None] * self.__renderChunksWide * self.__renderChunksTall * self.__renderChunksDeep
 
         lists = 0
+        chunks = 0
         for x in range(self.__renderChunksWide):
             for y in range(self.__renderChunksTall):
                 for z in range(self.__renderChunksDeep):
@@ -84,6 +108,10 @@ cdef class RenderGlobal:
                     self.__worldRenderers[i] = WorldRenderer(self.__worldObj, x << 4, y << 4,
                                                              z << 4, RenderGlobal.CHUNK_SIZE,
                                                              self.__glRenderListBase + lists)
+                    if self.__occlusionEnabled:
+                        self.__worldRenderers[i].glOcclusionQuery = self.__glOcclusionQueryBase.getAt(chunks)
+
+                    chunks += 1
                     self.__sortedWorldRenderers[i] = self.__worldRenderers[i]
                     lists += 3
 
@@ -152,41 +180,68 @@ cdef class RenderGlobal:
         )
 
     def renderEntities(self, vec, Frustum frustum, float a):
-        cdef int x, y, z
-        cdef float x0, x1, y0, y1, z0, z1
-        cdef bint exists
+        cdef int x, y, z, x0, y0, z0, x1, y1, z1, chunk
+        cdef bint visible
         cdef list entities
         cdef Entity entity
 
         RenderManager.instance.cacheActiveRenderInfo(self.__worldObj, self.__renderEngine,
                                                      self.__mc.thePlayer, a)
+        self.__countEntitiesTotal = 0
+        self.__countEntitiesRendered = 0
+        self.__countEntitiesHidden = 0
         eMap = self.__worldObj.entityMap
         for x in range(eMap.width):
-            x0 = (x << 4) - 2
-            x1 = (x + 1 << 4) + 2
             for y in range(eMap.depth):
-                y0 = (y << 4) - 2
-                y1 = (y + 1 << 4) + 2
                 for z in range(eMap.height):
                     entities = eMap.entityGrid[(z * eMap.depth + y) * eMap.width + x]
                     if not entities:
                         continue
 
-                    z0 = (z << 4) - 2
-                    z1 = (z + 1 << 4) + 2
-                    if frustum.isBoundingBoxInFrustum(x0, y0, z0, x1, y1, z1):
-                        exists = frustum.isBoundingBoxFullyInFrustum(x0, y0, z0,
-                                                                     x1, y1, z1)
+                    x0 = (x << 3) + 4
+                    y0 = (y << 3) + 4
+                    z0 = (z << 3) + 4
+                    self.__countEntitiesTotal += len(entities)
+                    if x0 >= 0 and y0 >= 0 and z0 >= 0 and \
+                       x0 < self.__worldObj.width and y0 < self.__worldObj.height and \
+                       z0 < self.__worldObj.length:
+                        x1 = x0 // 16
+                        y1 = y0 // 16
+                        z1 = z0 // 16
+                        chunk = (z1 * self.__renderChunksTall + y1) * self.__renderChunksWide + x1
+                        visible = self.__worldRenderers[chunk].isInFrustum and \
+                                  self.__worldRenderers[chunk].isVisible
+                    else:
+                        visible = True
+
+                    if visible:
                         for entity in entities:
                             if entity.shouldRender(vec) and \
-                               (exists or frustum.isVisible(entity.boundingBox)):
+                               frustum.isVisible(entity.boundingBox):
                                 if entity != self.__worldObj.playerEntity:
+                                    self.__countEntitiesRendered += 1
                                     RenderManager.instance.renderEntity(entity, a)
+                    else:
+                        self.__countEntitiesHidden += len(entities)
+
+    def getDebugInfoRenders(self):
+        return f'C: {self.__renderersBeingRendered} / {self.__renderersLoaded}' \
+               f'. F: {self.__renderersBeingClipped}, O: {self.__renderersBeingOccluded}'
+
+    def getDebugInfoEntities(self):
+        return f'E: {self.__countEntitiesRendered} / {self.__countEntitiesTotal}' \
+               f'. B: {self.__countEntitiesHidden}, I: ' + \
+               str(self.__countEntitiesTotal - self.__countEntitiesHidden - self.__countEntitiesRendered)
 
     def sortAndRender(self, player, int layer):
-        cdef int startingIndex
-        cdef float xd, yd, zd
-        cdef WorldRenderer chunk
+        cdef int chunk, minChunk, maxChunk, queryRate
+        cdef float xd, yd, zd, d
+
+        if layer == 0:
+            self.__renderersLoaded = 0
+            self.__renderersBeingClipped = 0
+            self.__renderersBeingOccluded = 0
+            self.__renderersBeingRendered = 0
 
         xd = player.posX - self.__prevSortX
         yd = player.posY - self.__prevSortY
@@ -200,22 +255,108 @@ cdef class RenderGlobal:
                 key=cmp_to_key(EntitySorter(player).compare)
             )
 
+        if self.__occlusionEnabled and layer == 0:
+            maxChunk = 8
+            self.__checkOcclusionQueryResult(0, 8)
+
+            for chunk in range(8):
+                self.__sortedWorldRenderers[chunk].isVisible = True
+
+            remaining = 0 + self.__renderSortedRenderers(0, 8, layer)
+            while True:
+                minChunk = maxChunk
+                maxChunk <<= 1
+                maxChunk = min(maxChunk, len(self.__sortedWorldRenderers))
+
+                gl.glDisable(gl.GL_TEXTURE_2D)
+                gl.glDisable(gl.GL_LIGHTING)
+                gl.glDisable(gl.GL_ALPHA_TEST)
+                gl.glColorMask(False, False, False, False)
+                gl.glDepthMask(False)
+                self.__checkOcclusionQueryResult(minChunk, maxChunk)
+
+                for chunk in range(minChunk, maxChunk):
+                    if not self.__sortedWorldRenderers[chunk].isInFrustum:
+                        self.__sortedWorldRenderers[chunk].isVisible = True
+
+                    if self.__sortedWorldRenderers[chunk].isInFrustum and not \
+                       self.__sortedWorldRenderers[chunk].isWaitingOnOcclusionQuery:
+                        d = sqrt(self.__sortedWorldRenderers[chunk].distanceToEntitySquared(player))
+                        queryRate = <int>(1.0 + d / 64.0)
+                        if self.__cloudOffsetX % queryRate == chunk % queryRate:
+                            gl.glBeginQueryARB(
+                                gl.GL_SAMPLES_PASSED,
+                                self.__sortedWorldRenderers[chunk].glOcclusionQuery
+                            )
+                            self.__sortedWorldRenderers[chunk].callOcclusionQueryList()
+                            gl.glEndQueryARB(gl.GL_SAMPLES_PASSED)
+                            self.__sortedWorldRenderers[chunk].isWaitingOnOcclusionQuery = True
+
+                gl.glColorMask(True, True, True, True)
+                gl.glDepthMask(True)
+                gl.glEnable(gl.GL_TEXTURE_2D)
+                gl.glEnable(gl.GL_ALPHA_TEST)
+                remaining += self.__renderSortedRenderers(minChunk, maxChunk, layer)
+                if maxChunk >= len(self.__sortedWorldRenderers):
+                    break
+        else:
+            remaining = 0 + self.__renderSortedRenderers(
+                0, len(self.__sortedWorldRenderers), layer
+            )
+
+        return remaining
+
+    cdef __checkOcclusionQueryResult(self, int minChunk, int maxChunk):
+        cdef int chunk
+        for chunk in range(minChunk, maxChunk):
+            if self.__sortedWorldRenderers[chunk].isWaitingOnOcclusionQuery:
+                self.__occlusionResult.clear()
+                self.__occlusionResult.glGetQueryObjectivARB(
+                    self.__sortedWorldRenderers[chunk].glOcclusionQuery,
+                    gl.GL_QUERY_RESULT_AVAILABLE
+                )
+                if self.__occlusionResult.getAt(0) != 0:
+                    self.__sortedWorldRenderers[chunk].isWaitingOnOcclusionQuery = False
+                    self.__occlusionResult.clear()
+                    self.__occlusionResult.glGetQueryObjectivARB(
+                        self.__sortedWorldRenderers[chunk].glOcclusionQuery,
+                        gl.GL_QUERY_RESULT
+                    )
+                    self.__sortedWorldRenderers[chunk].isVisible = self.__occlusionResult.getAt(0) != 0
+
+    cdef int __renderSortedRenderers(self, int minChunk, int maxChunk, int layer):
+        cdef int startingIndex, chunk
+
         startingIndex = 0
-        for chunk in self.__sortedWorldRenderers:
-            if chunk.isInFrustum:
-                startingIndex = chunk.getGLCallListForPass(self.__chunkBuffer, startingIndex, layer)
+        for chunk in range(minChunk, maxChunk):
+            if layer == 0:
+                self.__renderersLoaded += 1
+                if not self.__sortedWorldRenderers[chunk].isInFrustum:
+                    self.__renderersBeingClipped += 1
+                if self.__sortedWorldRenderers[chunk].isInFrustum and not \
+                   self.__sortedWorldRenderers[chunk].isVisible:
+                    self.__renderersBeingOccluded ++ 1
+                if self.__sortedWorldRenderers[chunk].isInFrustum and \
+                   self.__sortedWorldRenderers[chunk].isVisible:
+                    self.__renderersBeingRendered += 1
+
+            if self.__sortedWorldRenderers[chunk].isInFrustum and \
+               self.__sortedWorldRenderers[chunk].isVisible:
+                startingIndex = (<WorldRenderer>self.__sortedWorldRenderers[chunk]).getGLCallListForPass(
+                    self.__chunkBuffer, startingIndex, layer
+                )
 
         self.__renderIntBuffer.clear()
         self.__renderIntBuffer.putInts(self.__chunkBuffer, 0, startingIndex)
         self.__renderIntBuffer.flip()
         if self.__renderIntBuffer.remaining() > 0:
-            self.__renderIntBuffer.glCallLists(self.__renderIntBuffer.remaining(), gl.GL_INT)
+            self.__renderIntBuffer.glCallLists()
 
         return self.__renderIntBuffer.remaining()
 
     def renderAllRenderLists(self):
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.__renderEngine.getTexture('terrain.png'))
-        self.__renderIntBuffer.glCallLists(self.__renderIntBuffer.remaining(), gl.GL_INT)
+        self.__renderIntBuffer.glCallLists()
 
     def updateClouds(self):
         self.__cloudOffsetX += 1
@@ -284,7 +425,7 @@ cdef class RenderGlobal:
         gl.glEnable(gl.GL_TEXTURE_2D)
 
     def oobGroundRenderer(self):
-        cdef float br = self.__worldObj.getBlockLightValue(
+        cdef float br = self.__worldObj.getBrightness(
             0, self.__worldObj.getGroundLevel(), 0
         )
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.__renderEngine.getTexture('dirt.png'))
@@ -344,7 +485,7 @@ cdef class RenderGlobal:
             if not block:
                 block = blocks.stone
 
-            self.__globalRenderBlocks.renderBlockAllFacesHit(
+            self.__globalRenderBlocks.renderBlockUsingTexture(
                 block, h.blockX, h.blockY, h.blockZ,
                 240 + <int>(self.damagePartialTime * 10.0)
             )

@@ -11,4 +11,4 @@ class PlayerLoader(LevelLoader):
         if entityId == 'LocalPlayer':
             return EntityPlayerSP(self.__minecraft, world)
         else:
-            super()._loadEntity(world, entityId)
+            return super()._loadEntity(world, entityId)

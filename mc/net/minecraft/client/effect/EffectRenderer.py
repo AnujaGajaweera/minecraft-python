@@ -35,7 +35,7 @@ class EffectRenderer:
         za2 = xa * math.sin(entity.rotationPitch * math.pi / 180.0)
         ya = math.cos(entity.rotationPitch * math.pi / 180.0)
 
-        for i in range(3):
+        for i in range(2):
             if not len(self.__fxLayers[i]):
                 continue
 
@@ -59,12 +59,8 @@ class EffectRenderer:
             return
 
         t = tessellator
-        t.startDrawingQuads()
-
         for p in self.__fxLayers[2]:
             p.renderParticle(t, translation, 0.0, 0.0, 0.0, 0.0, 0.0)
-
-        t.draw()
 
     def clearEffects(self, world):
         self.__worldObj = world

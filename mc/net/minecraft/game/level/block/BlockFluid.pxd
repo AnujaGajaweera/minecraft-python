@@ -10,9 +10,9 @@ cdef class BlockFluid(Block):
         public int _stillId
         public int _movingId
 
-    cpdef int getBlockTexture(self, int face)
+    cpdef int getBlockTextureFromSide(self, int face)
     cpdef bint renderAsNormalBlock(self)
-    cpdef void updateTick(self, World world, int x, int y, int z, Random random) except *
+    cpdef updateTick(self, World world, int x, int y, int z, Random random)
     cdef bint update(self, World world, int x, int y, int z, int _)
     cpdef bint _canFlow(self, World world, int x, int y, int z)
     cdef bint __extinguishFireLava(self, World world, int x, int y, int z)
@@ -23,7 +23,6 @@ cdef class BlockFluid(Block):
     cpdef bint isOpaqueCube(self)
     cpdef void onNeighborBlockChange(self, World world, int x, int y, int z, int blockType) except *
     cdef int tickRate(self)
-    cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z, float chance)
     cpdef int quantityDropped(self, Random random)
     cdef int getRenderBlockPass(self)
     cpdef void randomDisplayTick(self, World world, int x, int y, int z, Random random) except *
