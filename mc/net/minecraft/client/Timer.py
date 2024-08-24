@@ -41,8 +41,8 @@ class Timer:
 
         self.__elapsedPartialTicks += adjust * self.__timerSpeed * self.ticksPerSecond
         self.elapsedTicks = int(self.__elapsedPartialTicks)
+        self.__elapsedPartialTicks -= self.elapsedTicks
         if self.elapsedTicks > Timer.MAX_TICKS_PER_UPDATE:
             self.elapsedTicks = Timer.MAX_TICKS_PER_UPDATE
 
-        self.__elapsedPartialTicks -= self.elapsedTicks
         self.renderPartialTicks = self.__elapsedPartialTicks

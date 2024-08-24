@@ -592,3 +592,6 @@ cdef class RenderGlobal:
             self.__mc.effectRenderer.addEffect(
                 EntitySplashFX(self.__worldObj, x, y, z)
             )
+
+    def playStreaming(self, str music, float x, float y, float z, float _):
+        self.__mc.sndManager.playStreaming(x, y, z)

@@ -1,4 +1,5 @@
 from mc.net.minecraft.game.level.block.Blocks import blocks
+from mc.net.minecraft.game.level.material.Material import Material
 from mc.net.minecraft.game.item.Item import Item
 
 class ItemHoe(Item):
@@ -16,7 +17,9 @@ class ItemHoe(Item):
             return False
 
         blockId = world.getBlockId(x, y, z)
-        if blockId != blocks.grass.blockID and blockId != blocks.dirt.blockID:
+        material = world.getBlockMaterial(x, y + 1, z)
+        if (material.isSolid() or blockId != blocks.grass.blockID) and \
+           blockId != blocks.dirt.blockID:
             return False
 
         step = blocks.tilledField.stepSound

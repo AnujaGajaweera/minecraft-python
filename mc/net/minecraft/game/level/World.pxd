@@ -86,7 +86,7 @@ cdef class World:
     cdef __findSpawn(self)
     cdef __calculateLighting(self)
     cdef void __updateSkylight(self, int x0, int y0, int x1, int y1) except *
-    cdef void __updateBlockLight(self, int x0, int y0, int z0, int x1, int y1, int z1)
+    cpdef void updateBlockLight(self, int x0, int y0, int z0, int x1, int y1, int z1)
     cpdef swap(self, int x0, int y0, int z0, int x1, int y1, int z1)
     cpdef bint setBlock(self, int x, int y, int z, int blockType)
     cpdef bint setBlockWithNotify(self, int x, int y, int z, int blockType)

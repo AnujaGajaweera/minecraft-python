@@ -21,6 +21,7 @@ class EntityPlayer(EntityLiving):
             world.playerEntity = self
             world.releaseEntitySkin(self)
 
+        self.setPositionAndRotation(world.xSpawn, world.ySpawn, world.zSpawn, 0.0, 0.0)
         self.yOffset = 1.62
         self.inventory = InventoryPlayer()
         self.health = EntityPlayer.MAX_HEALTH
@@ -41,6 +42,7 @@ class EntityPlayer(EntityLiving):
         self.deathTime = 0
 
     def onLivingUpdate(self):
+        self._worldObj.playMusic(self.posX, self.posY, self.posZ, 'calm', 0.0)
         if self._worldObj.difficultySetting == 0 and self.health < 20 and \
            self.ticksExisted % 20 << 2 == 0:
             self.heal(1)

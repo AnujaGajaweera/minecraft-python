@@ -9,6 +9,7 @@ class BlockFarmland(Block):
         self.blockIndexInTexture = 87
         self._setTickOnLoad(True)
         self._setBlockBounds(0.0, 0.0, 0.0, 1.0, 15.0 / 16.0, 1.0)
+        self.setLightOpacity(255)
 
     def getCollisionBoundingBoxFromPool(self, x, y, z):
         return AxisAlignedBB(x, y, z, x + 1, y + 1, z + 1)
@@ -81,6 +82,12 @@ class BlockFarmland(Block):
 
     def onEntityWalking(self, world, x, y, z):
         if world.rand.nextInt(4) == 0:
+            world.setBlockWithNotify(x, y, z, self.blocks.dirt.blockID)
+
+    def onNeighborBlockChange(self, world, x, y, z, blockType):
+        super().onNeighborBlockChange(world, x, y, z, blockType)
+        material = world.getBlockMaterial(x, y + 1, z)
+        if material.isSolid():
             world.setBlockWithNotify(x, y, z, self.blocks.dirt.blockID)
 
     def idDropped(self, metadata):

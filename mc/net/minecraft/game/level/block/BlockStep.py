@@ -9,6 +9,8 @@ class BlockStep(Block):
         if not self.__blockType:
             self._setBlockBounds(0.0, 0.0, 0.0, 1.0, 0.5, 1.0)
 
+        self.setLightOpacity(255)
+
     def getBlockTextureFromSide(self, face):
         return 6 if face <= 1 else 5
 

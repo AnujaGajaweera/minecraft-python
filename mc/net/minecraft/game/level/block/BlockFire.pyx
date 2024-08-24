@@ -130,8 +130,17 @@ cdef class BlockFire(Block):
         cdef int chance = self.__chanceToEncourageFire[world.getBlockId(x, y, z)]
         return chance if chance > lastChance else lastChance
 
+    def canPlaceBlockAt(self, World world, int x, int y, int z):
+        return world.isBlockNormalCube(x, y - 1, z) or \
+               self.__canNeighborCatchFire(world, x, y, z)
+
     cpdef void onNeighborBlockChange(self, World world, int x, int y, int z, int blockType) except *:
         if not world.isBlockNormalCube(x, y - 1, z) and not self.__canNeighborCatchFire(world, x, y, z):
+            world.setBlockWithNotify(x, y, z, 0)
+
+    def onBlockAdded(self, World world, int x, int y, int z):
+        if not world.isBlockNormalCube(x, y - 1, z) and \
+           not self.__canNeighborCatchFire(world, x, y, z):
             world.setBlockWithNotify(x, y, z, 0)
 
     cpdef bint getChanceOfNeighborsEncouragingFire(self, int blockId):
@@ -157,7 +166,7 @@ cdef class BlockFire(Block):
         cdef int i
         cdef float posX, posY, posZ
 
-        if random.nextInt(10) == 0:
+        if random.nextInt(24) == 0:
             world.playSoundAtPlayer(
                 x + 0.5, y + 0.5, z + 0.5, 'fire.fire',
                 1.0 + random.nextFloat(), random.nextFloat() * 0.7 + 0.3

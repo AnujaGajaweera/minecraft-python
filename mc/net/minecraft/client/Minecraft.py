@@ -352,6 +352,22 @@ class Minecraft(window.Window):
 
         self.set_icon(resource.image('icon/minecraft.png'))
 
+        print('Pyglet version:', pyglet.version)
+        print('GL RENDERER:', gl.gl_info.get_renderer())
+        print('GL VENDOR:', gl.gl_info.get_vendor())
+        print('GL VERSION:', gl.gl_info.get_version())
+        print('OpenGL 3.0:', gl.gl_info.have_version(3, 0))
+        print('OpenGL 3.1:', gl.gl_info.have_version(3, 1))
+        print('OpenGL 3.2:', gl.gl_info.have_version(3, 2))
+        print('ARB_compatibility:', gl.gl_info.have_extension('GL_ARB_compatibility'))
+        if gl.gl_info.have_version(3, 2):
+            prof = gl.GLint()
+            gl.glGetIntegerv(gl.GL_CONTEXT_PROFILE_MASK, prof)
+            val = prof.value
+            print('PROFILE MASK:', format(val, 'b'))
+            print('CORE PROFILE:', ((val & 1) != 0))
+            print('COMPATIBILITY PROFILE:', ((val & 2) != 0))
+
         gl.glEnable(gl.GL_TEXTURE_2D)
         gl.glShadeModel(gl.GL_SMOOTH)
         gl.glClearDepth(1.0)

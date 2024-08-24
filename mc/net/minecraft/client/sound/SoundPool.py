@@ -6,7 +6,7 @@ class SoundPool:
     def __init__(self):
         self.__rand = Random()
         self.__nameToSoundPoolEntriesMapping = {}
-        self.numberOfSoundPoolEntries = 0
+        self.__numberOfSoundPoolEntries = 0
 
     def addSound(self, soundUrl, file):
         try:
@@ -19,7 +19,7 @@ class SoundPool:
 
             entry = SoundPoolEntry(soundUrl, file)
             self.__nameToSoundPoolEntriesMapping[sound].append(entry)
-            self.numberOfSoundPoolEntries += 1
+            self.__numberOfSoundPoolEntries += 1
             return entry
         except Exception as e:
             raise RuntimeError(e)

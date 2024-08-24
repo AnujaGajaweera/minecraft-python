@@ -18,10 +18,19 @@ class SoundManager:
     __nextChannel = 0
     __sourceNames = [''] * NORMAL_CHANNELS
     __soundSources = {}
+    __loaded = False
 
     def loadSoundSettings(self, options):
         self.__options = options
+        if not self.__loaded and (options.sound or options.music):
+            self.__tryToSetLibraryAndCodecs()
 
+    def __tryToSetLibraryAndCodecs(self):
+        sound = self.__options.sound
+        music = self.__options.music
+        self.__options.sound = False
+        self.__options.music = False
+        self.__options.saveOptions()
         try:
             import pyogg
         except:
@@ -48,8 +57,14 @@ class SoundManager:
                     print('FFMPEG is additionally missing. Audio is not supported.')
                     self.__supported = False
 
+        self.__loaded = True
+
         if not self.__supported:
             return
+
+        self.__options.sound = sound
+        self.__options.music = music
+        self.__options.saveOptions()
 
         for root, dirs, files in os.walk(os.path.join(pyglet.resource.get_script_home(), os.path.sep.join(pyglet.resource.path))):
             for fileName in files:
@@ -66,11 +81,17 @@ class SoundManager:
         clock.schedule_once(self.removeTempSources, 10)
 
     def onSoundOptionsChanged(self):
+        if not self.__loaded and (self.__options.sound or self.__options.music):
+            self.__tryToSetLibraryAndCodecs()
+
         if not self.__options.music and self.__musicStream and self.__musicStream._source:
             self.__musicStream.pause()
             self.__musicStream = None
 
     def closeMinecraft(self):
+        if not self.__loaded:
+            return
+
         if self.__musicStream and self.__musicStream._source:
             self.__musicStream.pause()
             self.__musicStream = None
@@ -82,13 +103,15 @@ class SoundManager:
 
     def addMusic(self, music, file):
         self.__soundPoolMusic.addSound(music, file)
-        if self.__supported and (not self.__musicStream or not self.__musicStream._source) and \
-           self.__soundPoolMusic.numberOfSoundPoolEntries == 3 and self.__options.music:
+
+    def playStreaming(self, x, y, z):
+        if not self.__options.music or not self.__supported: return
+        if not self.__musicStream or not self.__musicStream._source:
             entry = self.__soundPoolMusic.getRandomSoundFromSoundPool('calm')
             self.__musicStream = pyglet.media.load(entry.soundUrl).play()
 
     def setListener(self, listener, partialTick):
-        if not listener:
+        if not self.__loaded or not self.__options.sound or not listener:
             return
 
         pitch = listener.prevRotationPitch + (listener.rotationPitch - listener.prevRotationPitch) * partialTick
@@ -110,7 +133,8 @@ class SoundManager:
 
     def playSound(self, sound, x, y, z, volume, pitch):
         entry = self.__soundPoolSounds.getRandomSoundFromSoundPool(sound)
-        if not entry or not self.__supported or not self.__options.sound:
+        if not entry or not self.__supported or not self.__options.sound or \
+           volume <= 0.0:
             return
 
         self.__latestSoundID = (self.__latestSoundID + 1) % 256
@@ -135,7 +159,7 @@ class SoundManager:
         priority = True if volume > 1.0 else False
         volume = min(gain * volume, 1.0)
 
-        player = self.__getNextChannel(entry.soundName)
+        player = self.__getNextChannel(f'sound_{self.__latestSoundID}')
         if not player:
             return
 
@@ -153,7 +177,7 @@ class SoundManager:
 
         self.__latestSoundID = (self.__latestSoundID + 1) % 256
 
-        player = self.__getNextChannel(entry.soundName)
+        player = self.__getNextChannel(f'sound_{self.__latestSoundID}')
         if not player:
             return
 
@@ -161,7 +185,7 @@ class SoundManager:
         player.max_distance = 100000000.
         player.position = (0.0, 0.0, 0.0)
         player.pitch = 1.0
-        player.volume = 1.0
+        player.volume = 0.25
         player.priority = False
         self.__playSound(player, entry)
 
@@ -178,7 +202,7 @@ class SoundManager:
             try: player._audio_player.alsource.rolloff_factor = 0.0
             except: pass
 
-        self.__soundSources[entry.soundName] = player
+        self.__soundSources[f'sound_{self.__latestSoundID}'] = player
 
     def __getNextChannel(self, sound):
         if not sound:

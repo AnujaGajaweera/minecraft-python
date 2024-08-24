@@ -8,7 +8,13 @@ class BlockSand(Block):
         super().__init__(blocks, blockId, tex, Material.sand)
         self.__rand = Random()
 
+    def onBlockAdded(self, world, x, y, z):
+        self.__fall(world, x, y, z)
+
     def onNeighborBlockChange(self, world, x, y, z, blockType):
+        self.__fall(world, x, y, z)
+
+    def __fall(self, world, x, y, z):
         newY = y
         while True:
             blockId = world.getBlockId(x, newY - 1, z)

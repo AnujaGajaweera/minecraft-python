@@ -30,6 +30,9 @@ cdef class BlockFlowing(BlockFluid):
         self._setBlockBounds(0.01, -0.09, 0.01, 1.01, 0.90999997, 1.01)
         self._setTickOnLoad(True)
 
+    def onBlockAdded(self, World world, int x, int y, int z):
+        world.scheduleBlockUpdate(x, y, z, self.__movingId)
+
     cpdef updateTick(self, World world, int x, int y, int z, Random random):
         self.update(world, x, y, z, 0)
 
@@ -43,7 +46,7 @@ cdef class BlockFlowing(BlockFluid):
                  self._canFlow(world, x, y, z - 1) or \
                  self._canFlow(world, x, y, z + 1)
         if change and world.getBlockMaterial(x, y - 1, z) == self.material:
-            res = world.floodFill(x, y, z, self.__movingId, self.__stillId)
+            res = world.floodFill(x, y - 1, z, self.__movingId, self.__stillId)
             if res <= 0:
                 return False
 

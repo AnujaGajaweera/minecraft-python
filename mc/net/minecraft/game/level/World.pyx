@@ -281,7 +281,7 @@ cdef class World:
 
         for x in range(self.width):
             for z in range(self.length):
-                self.__updateBlockLight(x, 0, z, x + 1, self.height, z + 1)
+                self.updateBlockLight(x, 0, z, x + 1, self.height, z + 1)
 
     cdef void __updateSkylight(self, int x0, int y0, int x1, int y1) except *:
         cdef int x, z, oldDepth, y, yl0, yl1
@@ -298,13 +298,13 @@ cdef class World:
                 if oldDepth != y:
                     yl0 = oldDepth if oldDepth < y else y
                     yl1 = oldDepth if oldDepth > y else y
-                    self.__updateBlockLight(x, yl0, z, x + 1, yl1, z + 1)
+                    self.updateBlockLight(x, yl0, z, x + 1, yl1, z + 1)
 
-        self.__updateBlockLight(0, 0, 0, 10, 10, 10)
+        self.updateBlockLight(0, 0, 0, 10, 10, 10)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef void __updateBlockLight(self, int x0, int y0, int z0, int x1, int y1, int z1):
+    cpdef void updateBlockLight(self, int x0, int y0, int z0, int x1, int y1, int z1):
         cdef int i, x, y, z, count, br, counter, depth, opacity, newDepth
         cdef int[:] lightCounter = np.zeros(1024, dtype=np.int32)
         cdef list lightArrays = []
@@ -489,10 +489,9 @@ cdef class World:
         if blockType != 0:
             blocks.blocksList[blockType].onBlockAdded(self, x, y, z)
 
-        self.__data[(y * self.length + z) * self.width + x] = 0
-
+        self.setBlockMetadata(x, y, z, 0)
         self.__updateSkylight(x, z, 1, 1)
-        self.__updateBlockLight(x, y, z, x + 1, y + 1, z + 1)
+        self.updateBlockLight(x, y, z, x + 1, y + 1, z + 1)
 
         for worldAccess in self.__worldAccesses:
             worldAccess.markBlockAndNeighborsNeedsUpdate(x, y, z)
@@ -521,7 +520,7 @@ cdef class World:
             return False
 
         self.blocks[(y * self.length + z) * self.width + x] = <char>blockType
-        self.__updateBlockLight(x, y, z, x + 1, y + 1, z + 1)
+        self.updateBlockLight(x, y, z, x + 1, y + 1, z + 1)
         return True
 
     cdef __notifyBlockOfNeighborChange(self, int x, int y, int z, int blockType):
@@ -1447,6 +1446,11 @@ cdef class World:
                     name, entity.posX, entity.posY - entity.yOffset,
                     entity.posZ, volume, pitch
                 )
+
+    def playMusic(self, float x, float y, float z, str name, float _):
+        cdef RenderGlobal worldAccess
+        for worldAccess in self.__worldAccesses:
+            worldAccess.playStreaming(name, x, y, z, 0.0)
 
     def playSoundAtPlayer(self, float x, float y, float z, str name,
                           float volume, float pitch):

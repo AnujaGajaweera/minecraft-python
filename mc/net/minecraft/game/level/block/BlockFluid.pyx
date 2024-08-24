@@ -32,6 +32,9 @@ cdef class BlockFluid(Block):
     cpdef bint renderAsNormalBlock(self):
         return False
 
+    def onBlockAdded(self, World world, int x, int y, int z):
+        world.scheduleBlockUpdate(x, y, z, self._movingId)
+
     cpdef updateTick(self, World world, int x, int y, int z, Random random):
         self.update(world, x, y, z, 0)
 
@@ -71,10 +74,9 @@ cdef class BlockFluid(Block):
         return hasChanged
 
     cpdef bint _canFlow(self, World world, int x, int y, int z):
-        cdef int blockId, xx, yy, zz
+        cdef int xx, yy, zz
 
-        blockId = world.getBlockId(x, y, z)
-        if blockId != 0 and blockId != self.blocks.fire.blockID:
+        if not world.getBlockMaterial(x, y, z).isTransparent():
             return False
 
         if self.material == Material.water:
@@ -149,7 +151,19 @@ cdef class BlockFluid(Block):
         return 1 if self.material == Material.water else 0
 
     cpdef void randomDisplayTick(self, World world, int x, int y, int z, Random random) except *:
+        cdef int i
         cdef float posX, posY, posZ
+
+        if random.nextInt(128) == -1 and world.getBlockMaterial(x, y + 1, z).getIsSolid():
+            if self.material == Material.lava:
+                world.playSoundAtPlayer(x + 0.5, y + 0.5, z + 0.5, 'liquid.lava',
+                                        random.nextFloat() * 0.25 + 12.0 / 16.0,
+                                        random.nextFloat() * 0.5 + 0.3)
+            elif self.material == Material.water:
+                world.playSoundAtPlayer(x + 0.5, y + 0.5, z + 0.5, 'liquid.water',
+                                        random.nextFloat() * 0.25 + 12.0 / 16.0,
+                                        random.nextFloat() + 0.5)
+
         if self.material == Material.lava and \
            world.getBlockMaterial(x, y + 1, z) == Material.air and not \
            world.isBlockNormalCube(x, y + 1, z) and random.nextInt(100) == 0:
@@ -157,3 +171,29 @@ cdef class BlockFluid(Block):
             posY = y + self.maxY
             posZ = z + random.nextFloat()
             world.spawnParticle('lava', posX, posY, posZ, 0.0, 0.0, 0.0)
+        if self.material == Material.water:
+            if BlockFluid.__checkEdges(world, x + 1, y, z):
+                for i in range(4):
+                    world.spawnParticle('splash', (x + 1) + 2.0 / 16.0, y,
+                                        z + random.nextFloat(), 0.0, 0.0, 0.0)
+            if BlockFluid.__checkEdges(world, x - 1, y, z):
+                for i in range(4):
+                    world.spawnParticle('splash', x - 2.0 / 16.0, y,
+                                        z + random.nextFloat(), 0.0, 0.0, 0.0)
+            if BlockFluid.__checkEdges(world, x, y, z + 1):
+                for i in range(4):
+                    world.spawnParticle('splash', x + random.nextFloat(), y,
+                                        (z + 1) + 2.0 / 16.0, 0.0, 0.0, 0.0)
+            if BlockFluid.__checkEdges(world, x, y, z - 1):
+                for i in range(4):
+                    world.spawnParticle('splash', x + random.nextFloat(), y,
+                                        z - 2.0 / 16.0, 0.0, 0.0, 0.0)
+
+    @staticmethod
+    cdef bint __checkEdges(World world, int x, int y, int z):
+        material = world.getBlockMaterial(x, y, z)
+        matBelow = world.getBlockMaterial(x, y - 1, z)
+        if not material.getIsSolid() and not material.getIsLiquid():
+            return matBelow.getIsSolid() or matBelow.getIsLiquid()
+        else:
+            return False

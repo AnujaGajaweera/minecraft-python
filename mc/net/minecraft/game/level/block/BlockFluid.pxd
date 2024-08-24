@@ -26,3 +26,5 @@ cdef class BlockFluid(Block):
     cpdef int quantityDropped(self, Random random)
     cdef int getRenderBlockPass(self)
     cpdef void randomDisplayTick(self, World world, int x, int y, int z, Random random) except *
+    @staticmethod
+    cdef bint __checkEdges(World world, int x, int y, int z)

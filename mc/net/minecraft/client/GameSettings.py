@@ -146,7 +146,6 @@ class GameSettings:
     limitFramerate = False
     numberOfOptions = 9
     difficulty = 2
-    openAlFail = False
 
     def __init__(self, mc, file):
         self.keyBindForward = KeyBinding('Forward', window.key.W)
@@ -173,7 +172,7 @@ class GameSettings:
 
     def setKeyBinding(self, i, key):
         self.keyBindings[i].keyCode = key
-        self.__saveOptions()
+        self.saveOptions()
 
     def setOptionValue(self, option, arg):
         if option == 0:
@@ -198,7 +197,7 @@ class GameSettings:
         elif option == 8:
             self.difficulty = self.difficulty + arg & 3
 
-        self.__saveOptions()
+        self.saveOptions()
 
     def getOptionDisplayString(self, option):
         if option == 0:
@@ -245,8 +244,6 @@ class GameSettings:
                             self.anaglyph = split[1] == 'true'
                         elif split[0] == 'limitFramerate':
                             self.limitFramerate = split[1] == 'true'
-                        elif split[0] == 'openAlFail':
-                            self.openAlFail = split[1] == 'true'
                         elif split[0] == 'difficulty':
                             self.difficulty = int(split[1])
 
@@ -256,7 +253,7 @@ class GameSettings:
         except Exception as e:
             print('Failed to load options:', e)
 
-    def __saveOptions(self):
+    def saveOptions(self):
         try:
             with open(self.__optionsFile, 'w+') as f:
                 f.write('music:' + ('true' if self.music else 'false') + '\n')
@@ -268,8 +265,6 @@ class GameSettings:
                 f.write('anaglyph3d:' + ('true' if self.anaglyph else 'false') + '\n')
                 f.write('limitFramerate:' + ('true' if self.limitFramerate else 'false') + '\n')
                 f.write('difficulty:' + str(self.difficulty) + '\n')
-                if self.openAlFail:
-                    f.write('openAlFail:' + ('true' if self.openAlFail else 'false') + '\n')
 
                 for binding in self.keyBindings:
                     f.write('key_' + binding.keyDescription + ':' + str(_GL_KEYS[binding.keyCode]) + '\n')

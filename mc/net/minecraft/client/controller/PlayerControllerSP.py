@@ -37,6 +37,8 @@ class PlayerControllerSP(PlayerController):
 
                     self._mc.theWorld.setBlockWithNotify(xx, yy, zz, blockId)
 
+        self._mc.theWorld.updateBlockLight(x - 5, y - 5, z - 5, x + 5, y + 5, z + 5)
+
     def sendBlockRemoved(self, x, y, z):
         block = self._mc.theWorld.getBlockId(x, y, z)
         metadata = self._mc.theWorld.getBlockMetadata(x, y, z)
