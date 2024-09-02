@@ -6,5 +6,5 @@ class RenderSpider(RenderLiving):
     def __init__(self):
         super().__init__(ModelSpider(), 1.0)
 
-    def _getDeathMaxRotation(self):
+    def _getDeathMaxRotation(self, entity):
         return 180.0

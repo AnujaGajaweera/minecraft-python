@@ -28,16 +28,13 @@ class PlayerControllerSP(PlayerController):
                     blockId = blocks.obsidian.blockID if yy < y - 1 else 0
                     if xx == x - 3 or zz == z - 3 or xx == x + 3 or zz == z + 3 or yy == y - 2 or yy == y + 2:
                         blockId = blocks.cobblestoneMossy.blockID
-
-                    if yy == y and zz == z and (xx == x - 3 + 1 or xx == x + 3 - 1):
-                        blockId = blocks.torch.blockID
-
                     if zz == z - 3 and xx == x and yy >= y - 1 and yy <= y:
                         blockId = 0
 
                     self._mc.theWorld.setBlockWithNotify(xx, yy, zz, blockId)
 
-        self._mc.theWorld.updateBlockLight(x - 5, y - 5, z - 5, x + 5, y + 5, z + 5)
+        self._mc.theWorld.setBlockWithNotify(x - 3 + 1, y, z, blocks.torch.blockID)
+        self._mc.theWorld.setBlockWithNotify(x + 3 - 1, y, z, blocks.torch.blockID)
 
     def sendBlockRemoved(self, x, y, z):
         block = self._mc.theWorld.getBlockId(x, y, z)
@@ -78,7 +75,7 @@ class PlayerControllerSP(PlayerController):
             if self.__blockDestroySoundCounter % 4.0 == 0.0 and block:
                 speed = (block.stepSound.soundVolume + 1.0) / 8.0
                 self._mc.sndManager.playSound(
-                    f'step.{block.stepSound.sound}', x + 0.5, y + 0.5, z + 0.5,
+                    block.stepSound.stepSoundDirStep(), x + 0.5, y + 0.5, z + 0.5,
                     speed, block.stepSound.soundPitch * 0.5
                 )
 
@@ -109,12 +106,8 @@ class PlayerControllerSP(PlayerController):
 
     def onWorldChange(self, world):
         super().onWorldChange(world)
-
         self.__mobSpawner = MobSpawner(world)
-        size = world.width * world.length * world.height // 64 // 64 // 64
-        for i in range(size):
-            self.__mobSpawner.spawnMob(size, world.playerEntity, None)
 
     def onUpdate(self):
         self.__prevBlockDamage = self.__curBlockDamage
-        self.__mobSpawner.spawnMobs()
+        self.__mobSpawner.performSpawning()

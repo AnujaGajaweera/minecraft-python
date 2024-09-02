@@ -1,7 +1,6 @@
 from mc.net.minecraft.client.sound.SoundPool import SoundPool
 from pyglet import clock
 
-import traceback
 import pyglet
 import math
 import os
@@ -22,6 +21,7 @@ class SoundManager:
 
     def loadSoundSettings(self, options):
         self.__options = options
+        return
         if not self.__loaded and (options.sound or options.music):
             self.__tryToSetLibraryAndCodecs()
 
@@ -81,6 +81,7 @@ class SoundManager:
         clock.schedule_once(self.removeTempSources, 10)
 
     def onSoundOptionsChanged(self):
+        return
         if not self.__loaded and (self.__options.sound or self.__options.music):
             self.__tryToSetLibraryAndCodecs()
 
@@ -89,6 +90,7 @@ class SoundManager:
             self.__musicStream = None
 
     def closeMinecraft(self):
+        return
         if not self.__loaded:
             return
 
@@ -105,12 +107,14 @@ class SoundManager:
         self.__soundPoolMusic.addSound(music, file)
 
     def playStreaming(self, x, y, z):
+        return
         if not self.__options.music or not self.__supported: return
         if not self.__musicStream or not self.__musicStream._source:
             entry = self.__soundPoolMusic.getRandomSoundFromSoundPool('calm')
             self.__musicStream = pyglet.media.load(entry.soundUrl).play()
 
     def setListener(self, listener, partialTick):
+        return
         if not self.__loaded or not self.__options.sound or not listener:
             return
 
@@ -132,6 +136,7 @@ class SoundManager:
         self.listener.up_orientation = (upX, upY, upZ)
 
     def playSound(self, sound, x, y, z, volume, pitch):
+        return
         entry = self.__soundPoolSounds.getRandomSoundFromSoundPool(sound)
         if not entry or not self.__supported or not self.__options.sound or \
            volume <= 0.0:
@@ -171,6 +176,7 @@ class SoundManager:
         self.__playSound(player, entry)
 
     def playSoundFX(self, sound, volume, pitch):
+        return
         entry = self.__soundPoolSounds.getRandomSoundFromSoundPool(sound)
         if not entry or not self.__supported or not self.__options.sound:
             return

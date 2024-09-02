@@ -24,7 +24,7 @@ class ItemHoe(Item):
 
         step = blocks.tilledField.stepSound
         world.playSoundAtPlayer(
-            x + 0.5, y + 0.5, z + 0.5, f'step.{step.sound}',
+            x + 0.5, y + 0.5, z + 0.5, step.stepSoundDirStep(),
             (step.soundVolume + 1.0) / 2.0, step.soundPitch * 0.8
         )
         world.setBlockWithNotify(x, y, z, blocks.tilledField.blockID)

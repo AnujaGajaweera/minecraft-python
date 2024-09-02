@@ -9,8 +9,8 @@ class RenderCreeper(RenderLiving):
     def __init__(self):
         super().__init__(ModelCreeper(), 0.5)
 
-    def _preRenderCallback(self, entity, a):
-        fuse = entity.getCreeperState(a)
+    def _preRenderCallback(self, creeper, a):
+        fuse = creeper.getCreeperState(a)
         scaled = 1.0 + math.sin(fuse * 100.0) * fuse * 0.01
         fuse = min(max(fuse, 0.0), 1.0)
         fuse *= fuse
@@ -19,8 +19,8 @@ class RenderCreeper(RenderLiving):
         y = (1.0 + fuse * 0.1) / scaled
         gl.glScalef(scale, y, scale)
 
-    def _getColorMultiplier(self, entity, a):
-        fuse = entity.getCreeperState(a)
+    def _getColorMultiplier(self, creeper, br, a):
+        fuse = creeper.getCreeperState(a)
         if int(fuse * 10.0) % 2 == 0:
             return 0
         else:

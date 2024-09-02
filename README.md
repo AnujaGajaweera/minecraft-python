@@ -5,16 +5,17 @@
 _**Minecraft: Python Edition**_ is a project that strives to recreate each and every old Minecraft version in Python 3 using the **Pyglet** multimedia library and **Cython** for performance.
 
 The project is currently working on the Indev versions of Minecraft.
-The latest version is **Indev 20100207-2** as released on _**February 7, 2010**_.
+The latest version is **Indev 20100212-2** as released on _**February 12, 2010**_.
 
-This version adds water splashing particles and new liquid sounds.
+This version adds the day and night cycle and craftable armor (not yet functional).
+This is the first version where hostile mobs only spawn at night and in dark areas.
 
 Features from previous Indev versions include the Indev mossy cobblestone spawn house, NBT level file saving, mobs and animals, farming,
 durable tools, difficulty, torches, advanced liquid spread, TNT explosives, chests, the main menu, workbench crafting, and soup.
 
-To easily install this version of *Minecraft: Python Edition*, just run `python -m pip install minecraft-python==20100207-2`.
+To easily install this version of *Minecraft: Python Edition*, just run `python -m pip install minecraft-python==20100212-2`.
 
-You can learn more about this version [on the Minecraft wiki.](https://minecraft.wiki/w/Java_Edition_Indev_20100207-2)
+You can learn more about this version [on the Minecraft wiki.](https://minecraft.wiki/w/Java_Edition_Indev_20100212-2)
 
 ### Organization
 

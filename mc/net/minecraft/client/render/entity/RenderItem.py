@@ -21,8 +21,7 @@ class RenderItem(Render):
             return
 
         if stack.itemID < 256 and blocks.blocksList[stack.itemID].getRenderType() == 0:
-            tex = renderEngine.getTexture('terrain.png')
-            gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
+            renderEngine.bindTexture(renderEngine.getTexture('terrain.png'))
             block = blocks.blocksList[stack.itemID]
             gl.glPushMatrix()
             gl.glTranslatef(width - 2, height + 3, 0.0)
@@ -36,11 +35,9 @@ class RenderItem(Render):
         elif stack.getItem().getIconIndex() >= 0:
             gl.glDisable(gl.GL_LIGHTING)
             if stack.itemID < 256:
-                tex = renderEngine.getTexture('terrain.png')
-                gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
+                renderEngine.bindTexture(renderEngine.getTexture('terrain.png'))
             else:
-                tex = renderEngine.getTexture('gui/items.png')
-                gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
+                renderEngine.bindTexture(renderEngine.getTexture('gui/items.png'))
 
             u = stack.getItem().getIconIndex() % 16 << 4
             v = stack.getItem().getIconIndex() // 16 << 4

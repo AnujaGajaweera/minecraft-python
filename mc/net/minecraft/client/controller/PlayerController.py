@@ -21,7 +21,7 @@ class PlayerController:
         if block and change:
             speed = (block.stepSound.soundVolume + 1.0) / 2.0
             self._mc.sndManager.playSound(
-                f'step.{block.stepSound.sound}', x + 0.5, y + 0.5, z + 0.5,
+                block.stepSound.stepSoundDir(), x + 0.5, y + 0.5, z + 0.5,
                 speed, block.stepSound.soundPitch * 0.8
             )
             block.onBlockDestroyedByPlayer(self._mc.theWorld, x, y, z, metadata)

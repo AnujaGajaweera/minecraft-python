@@ -48,11 +48,16 @@ class LevelLoader:
         world.cloudColor = environmentTag['CloudColor'].real
         world.skyColor = environmentTag['SkyColor'].real
         world.fogColor = environmentTag['FogColor'].real
-        world.skyBrightness = environmentTag['SkyBrightness'].real / 100.0
+        world.skyBrightness = max(environmentTag['SkyBrightness'].real, 0)
+        if world.skyBrightness > 15:
+            world.skyBrightness = world.skyBrightness * 15 // 100
+
         world.cloudHeight = environmentTag['CloudHeight'].real
         world.groundLevel = environmentTag['SurroundingGroundHeight'].real
         world.waterLevel = environmentTag['SurroundingWaterHeight'].real
         world.defaultFluid = environmentTag['SurroundingWaterType'].real
+        world.worldTime = environmentTag['TimeOfDay'].real
+        world.skylightSubtracted = world.getSkyBrightness()
         world.loadWorld(width, height, length, bytearray(mapTag['Blocks']),
                         bytearray(mapTag['Data']))
         if self.__guiLoading:
@@ -117,12 +122,13 @@ class LevelLoader:
         environmentTag = Compound({'CloudColor': Int(world.cloudColor),
                                    'SkyColor': Int(world.skyColor),
                                    'FogColor': Int(world.fogColor),
-                                   'SkyBrightness': Byte(int(world.skyBrightness * 100.0)),
+                                   'SkyBrightness': Byte(world.skyBrightness),
                                    'CloudHeight': Short(world.cloudHeight),
                                    'SurroundingGroundHeight': Short(world.groundLevel),
                                    'SurroundingWaterHeight': Short(world.waterLevel),
                                    'SurroundingGroundType': Byte(blocks.grass.blockID),
-                                   'SurroundingWaterType': Byte(world.defaultFluid)})
+                                   'SurroundingWaterType': Byte(world.defaultFluid),
+                                   'TimeOfDay': Short(world.worldTime)})
         mapTag = Compound({'Width': Short(world.width), 'Length': Short(world.length),
                            'Height': Short(world.height),
                            'Blocks': ByteArray(world.getBlocks()),

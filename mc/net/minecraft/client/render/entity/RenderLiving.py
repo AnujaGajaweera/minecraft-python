@@ -9,11 +9,18 @@ class RenderLiving(Render):
         super().__init__()
         self.__mainModel = model
         self._shadowSize = shadowSize
+        self.__renderPassModel = None
 
-    def _getDeathMaxRotation(self):
+    def setRenderPassModel(self, model):
+        self.__renderPassModel = model
+
+    def _shouldRenderPass(self, entity, i):
+        return False
+
+    def _getDeathMaxRotation(self, entity):
         return 90.0
 
-    def _getColorMultiplier(self, entity, a):
+    def _getColorMultiplier(self, entity, br, a):
         return 0
 
     def _preRenderCallback(self, entity, a):
@@ -27,12 +34,12 @@ class RenderLiving(Render):
             rotationYaw = entity.prevRotationYaw + (entity.rotationYaw - entity.prevRotationYaw) * a
             rotationPitch = entity.prevRotationPitch + (entity.rotationPitch - entity.prevRotationPitch) * a
             gl.glTranslatef(xd, yd, zd)
-            self._loadTexture(entity.texture)
+            z = entity.ticksExisted + a
             gl.glRotatef(180.0 - renderYaw, 0.0, 1.0, 0.0)
             if entity.deathTime > 0:
                 fall = (entity.deathTime + a - 1.0) / 20.0 * 1.6
                 fall = min(math.sqrt(fall), 1.0)
-                gl.glRotatef(fall * self._getDeathMaxRotation(), 0.0, 0.0, 1.0)
+                gl.glRotatef(fall * self._getDeathMaxRotation(entity), 0.0, 0.0, 1.0)
 
             gl.glScalef(-(1.0 / 16.0), -(1.0 / 16.0), 1.0 / 16.0)
             self._preRenderCallback(entity, a)
@@ -41,10 +48,17 @@ class RenderLiving(Render):
             y = entity.prevLimbYaw + (entity.limbYaw - entity.prevLimbYaw) * a
             x = entity.limbSwing - entity.limbYaw * (1.0 - a)
             y = min(y, 1.0)
-            self.__mainModel.render(x, y, 0.0, rotationYaw - renderYaw,
+            self._loadDownloadableImageTexture(entity.skinUrl, entity.getTexture())
+            gl.glEnable(gl.GL_ALPHA_TEST)
+            self.__mainModel.render(x, y, z, rotationYaw - renderYaw,
                                     rotationPitch, 1.0)
+            for i in range(4):
+                if self._shouldRenderPass(entity, i):
+                    self.__renderPassModel.render(x, y, z, rotationYaw - renderYaw,
+                                                  rotationPitch, 1.0)
+
             br = entity.getBrightness(a)
-            color = self._getColorMultiplier(entity, a)
+            color = self._getColorMultiplier(entity, br, a)
             if ((color % 0x100000000) >> 24) > 0 or entity.hurtTime > 0 or entity.deathTime > 0:
                 gl.glDisable(gl.GL_TEXTURE_2D)
                 gl.glDisable(gl.GL_ALPHA_TEST)
@@ -53,8 +67,12 @@ class RenderLiving(Render):
                 gl.glDepthFunc(gl.GL_EQUAL)
                 if entity.hurtTime > 0 or entity.deathTime > 0:
                     gl.glColor4f(br, 0.0, 0.0, 0.4)
-                    self.__mainModel.render(x, y, 0.0, rotationYaw - renderYaw,
+                    self.__mainModel.render(x, y, z, rotationYaw - renderYaw,
                                             rotationPitch, 1.0)
+                    for i in range(4):
+                        if self._shouldRenderPass(entity, i):
+                            self.__renderPassModel.render(x, y, z, rotationYaw - renderYaw,
+                                                          rotationPitch, 1.0)
 
                 if ((color % 0x100000000) >> 24) > 0:
                     r = (color >> 16 & 255) / 255.0
@@ -62,8 +80,12 @@ class RenderLiving(Render):
                     b = (color & 255) / 255.0
                     a = ((color % 0x100000000) >> 24) / 255.0
                     gl.glColor4f(r, g, b, a)
-                    self.__mainModel.render(x, y, 0.0, rotationYaw - renderYaw,
+                    self.__mainModel.render(x, y, z, rotationYaw - renderYaw,
                                             rotationPitch, 1.0)
+                    for i in range(4):
+                        if self._shouldRenderPass(entity, i):
+                            self.__renderPassModel.render(x, y, z, rotationYaw - renderYaw,
+                                                          rotationPitch, 1.0)
 
                 gl.glDepthFunc(gl.GL_LEQUAL)
                 gl.glDisable(gl.GL_BLEND)

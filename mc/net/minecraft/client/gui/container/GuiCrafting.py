@@ -4,6 +4,7 @@ from mc.net.minecraft.client.gui.container.InventoryCrafting import InventoryCra
 from mc.net.minecraft.client.gui.container.GuiContainer import GuiContainer
 from mc.net.minecraft.client.gui.container.SlotCrafting import SlotCrafting
 from mc.net.minecraft.client.gui.container.Slot import Slot
+from mc.net.minecraft.client.render.RenderEngine import RenderEngine
 from pyglet import gl
 
 class GuiCrafting(GuiContainer):
@@ -33,7 +34,7 @@ class GuiCrafting(GuiContainer):
         for slot in range(9):
             stack = self.__inventoryCrafting.getStackInSlot(slot)
             if stack:
-                self.mc.thePlayer.dropPlayerItemWithRandomChoice(stack)
+                self.mc.thePlayer.dropPlayerItem(stack)
 
     def guiCraftingItemsCheck(self):
         items = [0] * 9
@@ -55,7 +56,7 @@ class GuiCrafting(GuiContainer):
     def _drawGuiContainerBackgroundLayer(self):
         tex = self.mc.renderEngine.getTexture('gui/crafting.png')
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
+        RenderEngine.bindTexture(tex)
         x = (self.width - self.xSize) // 2
         y = (self.height - self.ySize) // 2
         self.drawTexturedModalRect(x, y, 0, 0, self.xSize, self.ySize)

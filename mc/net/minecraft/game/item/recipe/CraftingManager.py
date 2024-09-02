@@ -2,6 +2,7 @@ from mc.net.minecraft.game.item.Item import Item
 from mc.net.minecraft.game.item.Items import items
 from mc.net.minecraft.game.item.ItemStack import ItemStack
 from mc.net.minecraft.game.item.recipe.CraftingRecipe import CraftingRecipe
+from mc.net.minecraft.game.item.recipe.RecipesArmor import RecipesArmor
 from mc.net.minecraft.game.item.recipe.RecipesTools import RecipesTools
 from mc.net.minecraft.game.item.recipe.RecipesWeapons import RecipesWeapons
 from mc.net.minecraft.game.item.recipe.RecipesIngots import RecipesIngots
@@ -41,6 +42,7 @@ class CraftingManager:
                        ('###', '# #', '###', ord('#'), blocks.planks))
         self.addRecipe(ItemStack(blocks.workbench),
                        ('##', '##', ord('#'), blocks.planks))
+        RecipesArmor().addRecipes(self)
         self.addRecipe(ItemStack(blocks.clothGray, 1),
                        ('###', '###', '###', ord('#'), items.silk))
         self.addRecipe(ItemStack(blocks.tnt, 1),
@@ -73,12 +75,20 @@ class CraftingManager:
         slot = 0
         recipeWidth = 0
         recipeHeight = 0
-        while isinstance(solution[slot], str):
-            slots = solution[slot]
+        if isinstance(solution[0], tuple):
             slot += 1
-            recipeHeight += 1
-            recipeWidth = len(slots)
-            slotLocations += slots
+            pattern = solution[0]
+            for slots in pattern:
+                recipeHeight += 1
+                recipeWidth = len(slots)
+                slotLocations += slots
+        else:
+            while isinstance(solution[slot], str):
+                slots = solution[slot]
+                slot += 1
+                recipeHeight += 1
+                recipeWidth = len(slots)
+                slotLocations += slots
 
         slot2item = {}
         while slot < len(solution):

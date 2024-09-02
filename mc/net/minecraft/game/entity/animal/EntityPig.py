@@ -4,7 +4,7 @@ class EntityPig(EntityAnimal):
 
     def __init__(self, world):
         super().__init__(world)
-        self.texture = 'mob/pig.png'
+        self._texture = 'mob/pig.png'
         self.setSize(0.9, 0.9)
 
     def _writeEntityToNBT(self, compound):
@@ -15,3 +15,12 @@ class EntityPig(EntityAnimal):
 
     def _getEntityString(self):
         return 'Pig'
+
+    def _getLivingSound(self):
+        return 'mob.pig'
+
+    def _getHurtSound(self):
+        return 'mob.pig'
+
+    def _getDeathSound(self):
+        return 'mob.pigdeath'

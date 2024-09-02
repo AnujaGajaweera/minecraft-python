@@ -14,16 +14,16 @@ class BlockGrass(Block):
         return 3
 
     def updateTick(self, world, x, y, z, random):
-        if not world.isHalfLit(x, y + 1, z) and \
+        if world.getBlockLightValue(x, y + 1, z) < 4 and \
            world.getBlockMaterial(x, y + 1, z).getCanBlockGrass():
             if random.nextInt(4) == 0:
                 world.setBlockWithNotify(x, y, z, self.blocks.dirt.blockID)
-        else:
+        elif world.getBlockLightValue(x, y + 1, z) >= 9:
             xt = x + random.nextInt(3) - 1
             yt = y + random.nextInt(5) - 3
             zt = z + random.nextInt(3) - 1
             if world.getBlockId(xt, yt, zt) == self.blocks.dirt.blockID and \
-               world.isHalfLit(xt, yt + 1, zt) and not \
+               world.getBlockLightValue(xt, yt + 1, zt) >= 4 and not \
                world.getBlockMaterial(x, y + 1, z).getCanBlockGrass():
                 world.setBlockWithNotify(xt, yt, zt, self.blocks.grass.blockID)
 

@@ -255,8 +255,11 @@ cdef class Block:
     def blockActivated(self, World world, int x, int y, int z, player):
         return False
 
-    def onBlockPlaced(self, World world, float x, float y, float z):
+    def onPlaced(self, World world, float x, float y, float z):
         return False
 
     def onEntityWalking(self, World world, int x, int y, int z):
+        pass
+
+    def onBlockPlaced(self, World world, int x, int y, int z, int metadata):
         pass

@@ -58,12 +58,14 @@ cdef class Entity:
         public int air
         bint __firstUpdate
 
+        public str skinUrl
+
     cdef bint isOffsetPositionInLiquid(self, float xa, float ya, float za)
     cpdef moveEntity(self, float x, float y, float z)
     cdef _fall(self, float distance)
     cpdef bint handleWaterMovement(self)
     cpdef float _getEyeHeight(self)
-    cpdef bint handleLavaMovement(self)
+    cdef bint handleLavaMovement(self)
     cpdef moveFlying(self, float xa, float za, float speed)
     cpdef float getBrightness(self, float a)
     cdef applyEntityCollision(self, entity)

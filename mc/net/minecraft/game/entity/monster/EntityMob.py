@@ -7,6 +7,13 @@ class EntityMob(EntityCreature):
         self.health = 20
         self._attackStrength = 2
 
+    def onLivingUpdate(self):
+        br = self.getBrightness(1.0)
+        if br > 0.5:
+            self._entityAge += 2
+
+        super().onLivingUpdate()
+
     def onEntityUpdate(self):
         super().onEntityUpdate()
         if self._worldObj.difficultySetting == 0:
@@ -35,3 +42,7 @@ class EntityMob(EntityCreature):
 
     def _getEntityString(self):
         return 'Monster'
+
+    def getCanSpawnHere(self, x, y, z):
+        return self._worldObj.getBlockLightValue(int(x), int(y), int(z)) <= 8 and \
+               super().getCanSpawnHere(x, y, z)

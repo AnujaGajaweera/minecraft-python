@@ -1,5 +1,6 @@
 from mc.net.minecraft.game.item.ItemFlintAndSteel import ItemFlintAndSteel
 from mc.net.minecraft.game.item.ItemPickaxe import ItemPickaxe
+from mc.net.minecraft.game.item.ItemArmor import ItemArmor
 from mc.net.minecraft.game.item.ItemSword import ItemSword
 from mc.net.minecraft.game.item.ItemSpade import ItemSpade
 from mc.net.minecraft.game.item.ItemSeeds import ItemSeeds
@@ -26,8 +27,8 @@ class Items:
         apple = ItemFood(self, 4, 4).setIconIndex(4)
 
         self.bow = ItemBow(self, 5).setIconIndex(21)
-
         self.arrow = Item(self, 6).setIconIndex(37)
+
         self.coal = Item(self, 7).setIconIndex(7)
         self.diamond = Item(self, 8).setIconIndex(55)
         self.ingotIron = Item(self, 9).setIconIndex(23)
@@ -73,6 +74,27 @@ class Items:
         self.seeds = ItemSeeds(self, 39, blocks.crops.blockID).setIconIndex(9)
         self.wheat = Item(self, 40).setIconIndex(25)
         self.bread = ItemFood(self, 41, 5).setIconIndex(41)
+
+        self.helmetLeather = ItemArmor(self, 42, 0, 0).setIconIndex(0)
+        self.plateLeather = ItemArmor(self, 43, 0, 1).setIconIndex(16)
+        self.legsLeather = ItemArmor(self, 44, 0, 2).setIconIndex(32)
+        self.bootsLeather = ItemArmor(self, 45, 0, 3).setIconIndex(48)
+        self.helmetChain = ItemArmor(self, 46, 1, 0).setIconIndex(1)
+        self.plateChain = ItemArmor(self, 47, 1, 1).setIconIndex(17)
+        self.legsChain = ItemArmor(self, 48, 1, 2).setIconIndex(33)
+        self.bootsChain = ItemArmor(self, 49, 1, 3).setIconIndex(49)
+        self.helmetSteel = ItemArmor(self, 50, 2, 0).setIconIndex(2)
+        self.plateSteel = ItemArmor(self, 51, 2, 1).setIconIndex(18)
+        self.legsSteel = ItemArmor(self, 52, 2, 2).setIconIndex(34)
+        self.bootsSteel = ItemArmor(self, 53, 2, 3).setIconIndex(50)
+        self.helmetDiamond = ItemArmor(self, 54, 3, 0).setIconIndex(3)
+        self.plateDiamond = ItemArmor(self, 55, 3, 1).setIconIndex(19)
+        self.legsDiamond = ItemArmor(self, 56, 3, 2).setIconIndex(35)
+        self.bootsDiamond = ItemArmor(self, 57, 3, 3).setIconIndex(51)
+        self.helmetGold = ItemArmor(self, 58, 1, 0).setIconIndex(4)
+        self.plateGold = ItemArmor(self, 59, 1, 1).setIconIndex(20)
+        self.legsGold = ItemArmor(self, 60, 1, 2).setIconIndex(36)
+        self.bootsGold = ItemArmor(self, 61, 1, 3).setIconIndex(52)
 
         for i in range(256):
             if blocks.blocksList[i]:

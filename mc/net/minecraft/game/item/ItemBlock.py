@@ -19,7 +19,8 @@ class ItemBlock(Item):
         if not stack.stackSize:
             return False
 
-        if x <= 0 or y <= 0 or z <= 0 or x >= world.width - 1 or y >= world.height - 1 or z >= world.length - 1:
+        if x <= 0 or y <= 0 or z <= 0 or x >= world.width - 1 or \
+           y >= world.height - 1 or z >= world.length - 1:
             return False
 
         block = blocks.blocksList[world.getBlockId(x, y, z)]
@@ -30,18 +31,20 @@ class ItemBlock(Item):
 
         block = blocks.blocksList[self.__blockID]
         aabb = block.getCollisionBoundingBoxFromPool(x, y, z)
-        if not world.checkIfAABBIsClear(aabb) or not block.canPlaceBlockAt(world, x, y, z):
+        if not world.checkIfAABBIsClearSpawn(aabb) or \
+           not block.canPlaceBlockAt(world, x, y, z) or \
+           not world.setBlockWithNotify(x, y, z, self.__blockID):
             return True
 
-        world.setBlockWithNotify(x, y, z, self.__blockID)
+        blocks.blocksList[self.__blockID].onBlockPlaced(world, x, y, z, sideHit)
         x += 0.5
         y += 0.5
         z += 0.5
-        name = 'step.' + block.stepSound.sound
         volume = (block.stepSound.soundVolume + 1.0) / 2.0
-        world.playSoundAtPlayer(x, y, z, name, volume, block.stepSound.soundPitch * 0.8)
+        world.playSoundAtPlayer(x, y, z, block.stepSound.stepSoundDirStep(), volume,
+                                block.stepSound.soundPitch * 0.8)
         stack.stackSize -= 1
         return True
 
     def onPlaced(self, world, x, y, z):
-        return blocks.blocksList[self.__blockID].onBlockPlaced(world, x, y, z)
+        return blocks.blocksList[self.__blockID].onPlaced(world, x, y, z)

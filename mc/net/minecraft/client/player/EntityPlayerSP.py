@@ -7,10 +7,12 @@ from nbtlib.tag import Compound, List, Byte, Int
 
 class EntityPlayerSP(EntityPlayer):
 
-    def __init__(self, mc, world):
+    def __init__(self, mc, world, session):
         super().__init__(world)
         self.__mc = mc
         self.movementInput = None
+        if session:
+            self.skinUrl = f'https://api.mojang.com/users/profiles/minecraft/{session.username}'
 
     def _updatePlayerActionState(self):
         self._moveStrafing = self.movementInput.moveStrafe

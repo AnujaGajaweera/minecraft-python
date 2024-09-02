@@ -18,5 +18,6 @@ class EntityAnimal(EntityCreature):
     def _readEntityFromNBT(self, compound):
         super()._readEntityFromNBT(compound)
 
-    def _getEntityString(self):
-        return 'Pig'
+    def getCanSpawnHere(self, x, y, z):
+        return self._worldObj.getBlockLightValue(int(x), int(y), int(z)) > 8 and \
+               super().getCanSpawnHere(x, y, z)

@@ -19,16 +19,21 @@ class BlockFlower(Block):
 
     def onNeighborBlockChange(self, world, x, y, z, blockType):
         super().onNeighborBlockChange(world, x, y, z, blockType)
-        self._checkFlowerChange(world, x, y, z)
+        self.__checkFlowerChange(world, x, y, z)
 
     def updateTick(self, world, x, y, z, random):
-        self._checkFlowerChange(world, x, y, z)
+        self.__checkFlowerChange(world, x, y, z)
 
-    def _checkFlowerChange(self, world, x, y, z):
-        below = world.getBlockId(x, y - 1, z)
-        if not world.isHalfLit(x, y, z) or not \
-           self._canThisPlantGrowOnThisBlockID(below):
+    def __checkFlowerChange(self, world, x, y, z):
+        if not self.canBlockStay(world, x, y, z):
+            self.dropBlockAsItem(world, x, y, z, world.getBlockMetadata(x, y, z))
             world.setBlockWithNotify(x, y, z, 0)
+
+    def canBlockStay(self, world, x, y, z):
+        return (world.getBlockLightValue(x, y, z) >= 8 or \
+                world.getBlockLightValue(x, y, z) >= 4 and \
+                world.canBlockSeeTheSky(x, y, z)) and \
+               self._canThisPlantGrowOnThisBlockID(world.getBlockId(x, y - 1, z))
 
     def getCollisionBoundingBoxFromPool(self, x, y, z):
         return None

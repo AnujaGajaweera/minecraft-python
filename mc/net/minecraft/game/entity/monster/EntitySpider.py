@@ -6,7 +6,7 @@ class EntitySpider(EntityMob):
 
     def __init__(self, world):
         super().__init__(world)
-        self.texture = 'mob/spider.png'
+        self._texture = 'mob/spider.png'
         self.setSize(1.4, 0.9)
         self._moveSpeed = 0.8
 

@@ -4,7 +4,7 @@ class EntityCreeper(EntityMob):
 
     def __init__(self, world):
         super().__init__(world)
-        self.texture = 'mob/creeper.png'
+        self._texture = 'mob/creeper.png'
         self.__timeSinceIgnited = 0
         self.__lastActiveTime = 0
         self.__fuseTime = 30

@@ -21,9 +21,10 @@ from mc.net.minecraft.client.render.Tessellator import tessellator
 from mc.net.minecraft.client.render.WorldRenderer cimport WorldRenderer
 from mc.net.minecraft.client.render.RenderSorter import RenderSorter
 from mc.net.minecraft.client.render.RenderBlocks cimport RenderBlocks
+from mc.net.minecraft.client.render.ImageBufferDownload import ImageBufferDownload
 from mc.net.minecraft.client.render.entity.RenderManager import RenderManager
 from mc.JavaUtils import BufferUtils
-from mc.JavaUtils cimport getMillis
+from mc.JavaUtils cimport Random, getMillis
 from pyglet import gl
 from functools import cmp_to_key
 
@@ -42,6 +43,10 @@ cdef class RenderGlobal:
         self.__cloudOffsetX = 0
 
     def __init__(self, minecraft, renderEngine):
+        cdef Random rand
+        cdef float val
+        cdef int i
+
         self.__mc = minecraft
         self.__renderEngine = renderEngine
         self.__t = tessellator
@@ -65,13 +70,31 @@ cdef class RenderGlobal:
             self.__occlusionResult.glGetInteger(gl.GL_QUERY_COUNTER_BITS)
             if self.__occlusionResult.getAt(0) == 0:
                 self.__occlusionEnabled = False
-                return
+            else:
+                self.__glOcclusionQueryBase = BufferUtils.createIntBuffer(262144)
+                self.__glOcclusionQueryBase.clear()
+                self.__glOcclusionQueryBase.position(0)
+                self.__glOcclusionQueryBase.limit(262144)
+                self.__glOcclusionQueryBase.glGenQueriesARB()
 
-            self.__glOcclusionQueryBase = BufferUtils.createIntBuffer(262144)
-            self.__glOcclusionQueryBase.clear()
-            self.__glOcclusionQueryBase.position(0)
-            self.__glOcclusionQueryBase.limit(262144)
-            self.__glOcclusionQueryBase.glGenQueriesARB()
+        self.__glSkyList = gl.glGenLists(1)
+        gl.glNewList(self.__glSkyList, gl.GL_COMPILE)
+
+        rand = Random(10842)
+        for i in range(500):
+            gl.glRotatef(rand.nextFloat() * 360.0, 1.0, 0.0, 0.0)
+            gl.glRotatef(rand.nextFloat() * 360.0, 0.0, 1.0, 0.0)
+            gl.glRotatef(rand.nextFloat() * 360.0, 0.0, 0.0, 1.0)
+            t = tessellator
+            val = 0.25 + rand.nextFloat() * 0.25
+            t.startDrawingQuads()
+            t.addVertexWithUV(-val, -100.0, val, 1.0, 1.0)
+            t.addVertexWithUV(val, -100.0, val, 0.0, 1.0)
+            t.addVertexWithUV(val, -100.0, -val, 0.0, 0.0)
+            t.addVertexWithUV(-val, -100.0, -val, 1.0, 0.0)
+            t.draw()
+
+        gl.glEndList()
 
     def changeWorld(self, World world):
         if self.__worldObj:
@@ -85,8 +108,7 @@ cdef class RenderGlobal:
             self.loadRenderers()
 
     def loadRenderers(self):
-        cdef int lists, chunks, x, y, z, i, s, d, xx, zz
-        cdef float groundLevel, minX, minZ, waterLevel, yy
+        cdef int lists, chunks, x, y, z, i
         cdef WorldRenderer chunk
 
         if self.__worldRenderers:
@@ -120,59 +142,10 @@ cdef class RenderGlobal:
 
         self.__worldRenderersToUpdate.clear()
         gl.glNewList(self.__glGenList, gl.GL_COMPILE)
-        groundLevel = self.__worldObj.getGroundLevel()
-        s = 128
-        if s > self.__worldObj.width:
-            s = self.__worldObj.width
-        if s > self.__worldObj.length:
-            s = self.__worldObj.length
-        d = 2048 // s
-        self.__t.startDrawingQuads()
-        for xx in range(-s * d, self.__worldObj.width + s * d, s):
-            for zz in range(-s * d, self.__worldObj.length + s * d, s):
-                if groundLevel < 0.0 or xx < 0 or zz < 0 or \
-                   xx >= self.__worldObj.width or \
-                   zz >= self.__worldObj.length:
-                    self.__t.addVertexWithUV(xx, groundLevel, zz + s, 0.0, s)
-                    self.__t.addVertexWithUV(xx + s, groundLevel, zz + s, s, s)
-                    self.__t.addVertexWithUV(xx + s, groundLevel, zz, s, 0.0)
-                    self.__t.addVertexWithUV(xx, groundLevel, zz, 0.0, 0.0)
-
-        self.__t.draw()
+        self.__oobGroundRenderHeight()
         gl.glEndList()
         gl.glNewList(self.__glGenList + 1, gl.GL_COMPILE)
-        gl.glColor3f(1.0, 1.0, 1.0)
-        waterLevel = self.__worldObj.getWaterLevel()
-        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
-        s = 128
-        if s > self.__worldObj.width:
-            s = self.__worldObj.width
-        if s > self.__worldObj.length:
-            s = self.__worldObj.length
-
-        d = 2048 // s
-        self.__t.startDrawingQuads()
-        minX = blocks.waterMoving.minX
-        minZ = blocks.waterMoving.minZ
-
-        for xx in range(-s * d, self.__worldObj.width + s * d, s):
-            for zz in range(-s * d, self.__worldObj.length + s * d, s):
-                yy = waterLevel + blocks.waterMoving.minY
-                if waterLevel < 0.0 or xx < 0 or zz < 0 or \
-                   xx >= self.__worldObj.width or \
-                   zz >= self.__worldObj.length:
-                    self.__t.addVertexWithUV(xx + minX, yy, (zz + s) + minZ, 0.0, s)
-                    self.__t.addVertexWithUV((xx + s) + minX, yy, (zz + s) + minZ, s, s)
-                    self.__t.addVertexWithUV((xx + s) + minX, yy, zz + minZ, s, 0.0)
-                    self.__t.addVertexWithUV(xx + minX, yy, zz + minZ, 0.0, 0.0)
-
-                    self.__t.addVertexWithUV(xx + minX, yy, zz + minZ, 0.0, 0.0)
-                    self.__t.addVertexWithUV((xx + s) + minX, yy, zz + minZ, s, 0.0)
-                    self.__t.addVertexWithUV((xx + s) + minX, yy, (zz + s) + minZ, s, s)
-                    self.__t.addVertexWithUV(xx + minX, yy, (zz + s) + minZ, 0.0, s)
-
-        self.__t.draw()
-        gl.glDisable(gl.GL_BLEND)
+        self.__oobWaterRenderHeight()
         gl.glEndList()
         self.__markBlocksForUpdate(
             0, 0, 0, self.__worldObj.width, self.__worldObj.height,
@@ -363,57 +336,23 @@ cdef class RenderGlobal:
 
     def renderSky(self, float partialTicks):
         cdef int x, z
-        cdef float r, g, b, nr, scale, y, u
+        cdef float r, g, b, nr, y, xd, yd, zd, br, scale, u
 
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__renderEngine.getTexture('clouds.png'))
-        gl.glColor4f(1.0, 1.0, 1.0, 1.0)
-        r = (self.__worldObj.cloudColor >> 16 & 0xFF) / 255.0
-        g = (self.__worldObj.cloudColor >> 8 & 0xFF) / 255.0
-        b = (self.__worldObj.cloudColor & 0xFF) / 255.0
-        if self.__mc.options.anaglyph:
-            nr = (r * 30.0 + g * 59.0 + b * 11.0) / 100.0
-            g = (r * 30.0 + g * 70.0) / 100.0
-            b = (r * 30.0 + b * 70.0) / 100.0
-            r = nr
-
-        scale = 0.5 / 1024
-        y = self.__worldObj.cloudHeight
-        u = (self.__cloudOffsetX + partialTicks) * scale * 0.03
-        self.__t.startDrawingQuads()
-        self.__t.setColorOpaque_F(r, g, b)
-
-        for x in range(-2048, self.__worldObj.width + 2048, 512):
-            for z in range(-2048, self.__worldObj.height + 2048, 512):
-                self.__t.addVertexWithUV(x, y, z + 512.,
-                                         x * scale + u, (z + 512.) * scale)
-                self.__t.addVertexWithUV(x + 512., y, z + 512.,
-                                         (x + 512.) * scale + u, (z + 512.) * scale)
-                self.__t.addVertexWithUV(x + 512., y, z,
-                                         (x + 512.) * scale + u, z * scale)
-                self.__t.addVertexWithUV(x, y, z, x * scale + u, z * scale)
-                self.__t.addVertexWithUV(x, y, z, x * scale + u, z * scale)
-                self.__t.addVertexWithUV(x + 512., y, z,
-                                         (x + 512.) * scale + u, z * scale)
-                self.__t.addVertexWithUV(x + 512., y, z + 512.,
-                                         (x + 512.) * scale + u, (z + 512.) * scale)
-                self.__t.addVertexWithUV(x, y, z + 512.,
-                                         x * scale + u, (z + 512.) * scale)
-
-        self.__t.draw()
         gl.glDisable(gl.GL_TEXTURE_2D)
-        self.__t.startDrawingQuads()
-        r = (self.__worldObj.skyColor >> 16 & 0xFF) / 255.0
-        g = (self.__worldObj.skyColor >> 8 & 0xFF) / 255.0
-        b = (self.__worldObj.skyColor & 0xFF) / 255.0
+        skyColor = self.__worldObj.getSkyColor(partialTicks)
+        r = skyColor.xCoord
+        g = skyColor.yCoord
+        b = skyColor.zCoord
         if self.__mc.options.anaglyph:
             nr = (r * 30.0 + g * 59.0 + b * 11.0) / 100.0
             g = (r * 30.0 + g * 70.0) / 100.0
             b = (r * 30.0 + b * 70.0) / 100.0
             r = nr
 
+        gl.glDepthMask(False)
+        self.__t.startDrawingQuads()
         self.__t.setColorOpaque_F(r, g, b)
         y = self.__worldObj.height + 10.
-
         for x in range(-2048, self.__worldObj.width + 2048, 512):
             for z in range(-2048, self.__worldObj.height + 2048, 512):
                 self.__t.addVertex(x, y, z)
@@ -423,25 +362,163 @@ cdef class RenderGlobal:
 
         self.__t.draw()
         gl.glEnable(gl.GL_TEXTURE_2D)
+        gl.glDisable(gl.GL_FOG)
+        gl.glDisable(gl.GL_ALPHA_TEST)
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_ONE, gl.GL_ONE)
+        gl.glPushMatrix()
+        xd = self.__worldObj.playerEntity.lastTickPosX + \
+             (self.__worldObj.playerEntity.posX - \
+              self.__worldObj.playerEntity.lastTickPosX) * partialTicks
+        yd = self.__worldObj.playerEntity.lastTickPosY + \
+             (self.__worldObj.playerEntity.posY - \
+              self.__worldObj.playerEntity.lastTickPosY) * partialTicks
+        zd = self.__worldObj.playerEntity.lastTickPosZ + \
+             (self.__worldObj.playerEntity.posZ - \
+              self.__worldObj.playerEntity.lastTickPosZ) * partialTicks
+        gl.glColor4f(1.0, 1.0, 1.0, 1.0)
+        gl.glTranslatef(xd, yd, zd)
+        gl.glRotatef(0.0, 0.0, 0.0, 1.0)
+        gl.glRotatef(self.__worldObj.getCelestialAngle(partialTicks) * 360.0,
+                     1.0, 0.0, 0.0)
+        gl.glBindTexture(gl.GL_TEXTURE_2D,
+                         self.__renderEngine.getTexture('terrain/sun.png'))
+        self.__t.startDrawingQuads()
+        self.__t.addVertexWithUV(-30.0, 100.0, -30.0, 0.0, 0.0)
+        self.__t.addVertexWithUV(30.0, 100.0, -30.0, 1.0, 0.0)
+        self.__t.addVertexWithUV(30.0, 100.0, 30.0, 1.0, 1.0)
+        self.__t.addVertexWithUV(-30.0, 100.0, 30.0, 0.0, 1.0)
+        self.__t.draw()
+        gl.glBindTexture(gl.GL_TEXTURE_2D,
+                         self.__renderEngine.getTexture('terrain/moon.png'))
+        self.__t.startDrawingQuads()
+        self.__t.addVertexWithUV(-20.0, -100.0, 20.0, 1.0, 1.0)
+        self.__t.addVertexWithUV(20.0, -100.0, 20.0, 0.0, 1.0)
+        self.__t.addVertexWithUV(20.0, -100.0, -20.0, 0.0, 0.0)
+        self.__t.addVertexWithUV(-20.0, -100.0, -20.0, 1.0, 0.0)
+        self.__t.draw()
+        gl.glDisable(gl.GL_TEXTURE_2D)
+        br = self.__worldObj.getStarBrightness(partialTicks)
+        gl.glColor4f(br, br, br, br)
+        gl.glCallList(self.__glSkyList)
+        gl.glColor4f(1.0, 1.0, 1.0, 1.0)
+        gl.glEnable(gl.GL_TEXTURE_2D)
+        gl.glDisable(gl.GL_BLEND)
+        gl.glEnable(gl.GL_ALPHA_TEST)
+        gl.glEnable(gl.GL_FOG)
+        gl.glPopMatrix()
+        gl.glDepthMask(True)
+        gl.glBindTexture(gl.GL_TEXTURE_2D,
+                         self.__renderEngine.getTexture('clouds.png'))
+        gl.glColor4f(1.0, 1.0, 1.0, 1.0)
+        cloudColor = self.__worldObj.getCloudColor(partialTicks)
+        r = cloudColor.xCoord
+        g = cloudColor.yCoord
+        b = cloudColor.zCoord
+        if self.__mc.options.anaglyph:
+            nr = (r * 30.0 + g * 59.0 + b * 11.0) / 100.0
+            g = (r * 30.0 + g * 70.0) / 100.0
+            b = (r * 30.0 + b * 70.0) / 100.0
+            r = nr
+
+        y = self.__worldObj.cloudHeight
+        scale = 0.5 / 1024
+        u = (self.__cloudOffsetX + partialTicks) * scale * 0.03
+        self.__t.startDrawingQuads()
+        self.__t.setColorOpaque_F(r, g, b)
+        for x in range(-2048, self.__worldObj.width + 2048, 512):
+            for z in range(-2048, self.__worldObj.height + 2048, 512):
+                self.__t.addVertexWithUV(x, y, z + 512.,
+                                         x * scale + u, (z + 512.) * scale)
+                self.__t.addVertexWithUV(x + 512., y, z + 512.,
+                                         (x + 512.) * scale + u, (z + 512.) * scale)
+                self.__t.addVertexWithUV(x + 512., y, z,
+                                         (x + 512.) * scale + u, z * scale)
+                self.__t.addVertexWithUV(x, y, z, x * scale + u, z * scale)
+                self.__t.addVertexWithUV(x, y, z, x * scale + u, z * scale)
+                self.__t.addVertexWithUV(x + 512., y, z,
+                                         (x + 512.) * scale + u, z * scale)
+                self.__t.addVertexWithUV(x + 512., y, z + 512.,
+                                         (x + 512.) * scale + u, (z + 512.) * scale)
+                self.__t.addVertexWithUV(x, y, z + 512.,
+                                         x * scale + u, (z + 512.) * scale)
+
+        self.__t.draw()
 
     def oobGroundRenderer(self):
         cdef float br = self.__worldObj.getBrightness(
             0, self.__worldObj.getGroundLevel(), 0
         )
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__renderEngine.getTexture('dirt.png'))
+        gl.glBindTexture(gl.GL_TEXTURE_2D,
+                         self.__renderEngine.getTexture('dirt.png'))
         if self.__worldObj.getGroundLevel() > self.__worldObj.getWaterLevel() and \
            self.__worldObj.defaultFluid == blocks.waterMoving.blockID:
-            gl.glBindTexture(gl.GL_TEXTURE_2D, self.__renderEngine.getTexture('grass.png'))
+            gl.glBindTexture(gl.GL_TEXTURE_2D,
+                             self.__renderEngine.getTexture('grass.png'))
 
         gl.glColor4f(br, br, br, 1.0)
         gl.glEnable(gl.GL_TEXTURE_2D)
         gl.glCallList(self.__glGenList)
 
+    cdef __oobGroundRenderHeight(self):
+        cdef int s, d, x, z
+        cdef float groundLevel
+
+        groundLevel = self.__worldObj.getGroundLevel()
+        s = min(min(128, self.__worldObj.width), self.__worldObj.length)
+        d = 2048 // s
+        self.__t.startDrawingQuads()
+        for x in range(-s * d, self.__worldObj.width + s * d, s):
+            for z in range(-s * d, self.__worldObj.length + s * d, s):
+                if groundLevel < 0.0 or x < 0 or z < 0 or \
+                   x >= self.__worldObj.width or z >= self.__worldObj.length:
+                    self.__t.addVertexWithUV(x, groundLevel, z + s, 0.0, s)
+                    self.__t.addVertexWithUV(x + s, groundLevel, z + s, s, s)
+                    self.__t.addVertexWithUV(x + s, groundLevel, z, s, 0.0)
+                    self.__t.addVertexWithUV(x, groundLevel, z, 0.0, 0.0)
+
+        self.__t.draw()
+
     def oobWaterRenderer(self):
+        cdef float br
         gl.glEnable(gl.GL_TEXTURE_2D)
         gl.glEnable(gl.GL_BLEND)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__renderEngine.getTexture('water.png'))
+        gl.glBindTexture(gl.GL_TEXTURE_2D,
+                         self.__renderEngine.getTexture('water.png'))
+        br = self.__worldObj.getBrightness(0, self.__worldObj.getWaterLevel(), 0)
+        gl.glColor4f(br, br, br, 1.0)
         gl.glCallList(self.__glGenList + 1)
+        gl.glColor4f(1.0, 1.0, 1.0, 1.0)
+        gl.glDisable(gl.GL_BLEND)
+
+    cdef __oobWaterRenderHeight(self):
+        cdef int x, z, s, d
+        cdef float y, minX, minZ, waterLevel
+
+        waterLevel = self.__worldObj.getWaterLevel()
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+        s = min(min(128, self.__worldObj.width), self.__worldObj.length)
+        d = 2048 // s
+        self.__t.startDrawingQuads()
+        minX = blocks.waterMoving.minX
+        minZ = blocks.waterMoving.minZ
+
+        for x in range(-s * d, self.__worldObj.width + s * d, s):
+            for z in range(-s * d, self.__worldObj.length + s * d, s):
+                y = waterLevel + blocks.waterMoving.minY
+                if waterLevel < 0.0 or x < 0 or z < 0 or \
+                   x >= self.__worldObj.width or z >= self.__worldObj.length:
+                    self.__t.addVertexWithUV(x + minX, y, (z + s) + minZ, 0.0, s)
+                    self.__t.addVertexWithUV((x + s) + minX, y, (z + s) + minZ, s, s)
+                    self.__t.addVertexWithUV((x + s) + minX, y, z + minZ, s, 0.0)
+                    self.__t.addVertexWithUV(x + minX, y, z + minZ, 0.0, 0.0)
+
+                    self.__t.addVertexWithUV(x + minX, y, z + minZ, 0.0, 0.0)
+                    self.__t.addVertexWithUV((x + s) + minX, y, z + minZ, s, 0.0)
+                    self.__t.addVertexWithUV((x + s) + minX, y, (z + s) + minZ, s, s)
+                    self.__t.addVertexWithUV(x + minX, y, (z + s) + minZ, 0.0, s)
+
+        self.__t.draw()
         gl.glDisable(gl.GL_BLEND)
 
     def updateRenderers(self, player):
@@ -456,7 +533,7 @@ cdef class RenderGlobal:
         last = len(self.__worldRenderersToUpdate) - 1
         for i in range(last + 1):
             chunk = self.__worldRenderersToUpdate[last - i]
-            if chunk.distanceToEntitySquared(player) > 2500.0 and i > 2:
+            if chunk.distanceToEntitySquared(player) > 2500.0 and i > 4:
                 return
 
             self.__worldRenderersToUpdate.remove(chunk)
@@ -592,6 +669,26 @@ cdef class RenderGlobal:
             self.__mc.effectRenderer.addEffect(
                 EntitySplashFX(self.__worldObj, x, y, z)
             )
+        elif particle == 'largesmoke':
+            self.__mc.effectRenderer.addEffect(
+                EntitySmokeFX(self.__worldObj, x, y, z, 2.5)
+            )
 
-    def playStreaming(self, str music, float x, float y, float z, float _):
+    def playMusic(self, str music, float x, float y, float z, float _):
         self.__mc.sndManager.playStreaming(x, y, z)
+
+    def obtainEntitySkin(self, entity):
+        if entity.skinUrl:
+            self.__renderEngine.obtainImageData(entity.skinUrl, ImageBufferDownload())
+
+    def releaseEntitySkin(self, entity):
+        if entity.skinUrl:
+            self.__renderEngine.releaseImageData(entity.skinUrl)
+
+    cdef updateAllRenderers(self):
+        gl.glNewList(self.__glGenList, gl.GL_COMPILE)
+        self.__oobGroundRenderHeight()
+        gl.glEndList()
+        gl.glNewList(self.__glGenList + 1, gl.GL_COMPILE)
+        self.__oobWaterRenderHeight()
+        gl.glEndList()

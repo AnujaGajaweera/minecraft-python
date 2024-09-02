@@ -17,8 +17,14 @@ class Render:
         pass
 
     def _loadTexture(self, tex):
-        gl.glBindTexture(gl.GL_TEXTURE_2D,
-                         self._renderManager.renderEngine.getTexture(tex))
+        self._renderManager.renderEngine.bindTexture(
+            self._renderManager.renderEngine.getTexture(tex)
+        )
+
+    def _loadDownloadableImageTexture(self, skinUrl, tex):
+        self._renderManager.renderEngine.bindTexture(
+            self._renderManager.renderEngine.getTextureForDownloadableImage(skinUrl, tex)
+        )
 
     @staticmethod
     def renderOffsetAABB(bb):
@@ -69,10 +75,9 @@ class Render:
             d = (1.0 - d / 256.0) * self._shadowOpaque
             if d > 0.0:
                 gl.glEnable(gl.GL_BLEND)
-                self._renderManager.renderEngine.setClampTexture(True)
-                tex = self._renderManager.renderEngine.getTexture('shadow.png')
-                gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
-                self._renderManager.renderEngine.setClampTexture(False)
+                self._renderManager.renderEngine.bindTexture(
+                    self._renderManager.renderEngine.getTexture('%%/shadow.png')
+                )
                 gl.glDepthMask(False)
 
                 for xx in range(int(xd - self._shadowSize),
@@ -82,7 +87,7 @@ class Render:
                                         int(zd + self._shadowSize + 1)):
                             blockId = self._renderManager.worldObj.getBlockId(xx, yy - 1, zz)
                             if blockId > 0 and \
-                               self._renderManager.worldObj.isHalfLit(xx, yy, zz):
+                               self._renderManager.worldObj.getBlockLightValue(xx, yy, zz) > 3:
                                 block = blocks.blocksList[blockId]
                                 t = tessellator
                                 br = self._renderManager.worldObj.getBrightness(xx, yy, zz)

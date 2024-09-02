@@ -1,17 +1,9 @@
-from mc.net.minecraft.game.level.block.Block import Block
+from mc.net.minecraft.game.level.block.BlockBreakable import BlockBreakable
 
-class BlockGlass(Block):
+class BlockGlass(BlockBreakable):
 
-    def __init__(self, blocks, blockId, tex, material, _):
-        super().__init__(blocks, 20, 49, material)
-        self.__renderSide = False
+    def __init__(self, blocks, blockId, tex, material, localFlag):
+        super().__init__(blocks, 20, 49, material, False)
 
-    def isOpaqueCube(self):
-        return False
-
-    def shouldSideBeRendered(self, world, x, y, z, layer):
-        block = world.getBlockId(x, y, z)
-        if not self.__renderSide and block == self.blockID:
-            return False
-        else:
-            return super().shouldSideBeRendered(world, x, y, z, layer)
+    def quantityDropped(self, random):
+        return 0

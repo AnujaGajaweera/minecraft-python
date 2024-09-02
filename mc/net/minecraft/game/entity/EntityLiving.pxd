@@ -10,9 +10,10 @@ cdef class EntityLiving(Entity):
         public float prevRenderYawOffset
         float __prevRotationYawHead
         float __rotationYawHead
-        public str texture
+        public str _texture
         public int health
         public int prevHealth
+        int __livingSoundTime
         public int hurtTime
         public int maxHurtTime
         public float attackedAtYaw
@@ -23,7 +24,7 @@ cdef class EntityLiving(Entity):
         public float prevLimbYaw
         public float limbYaw
         public float limbSwing
-        int __entityAge
+        public int _entityAge
         public float _moveStrafing
         public float _moveForward
         float __randomYawVelocity

@@ -1,16 +1,30 @@
-from mc.net.minecraft.game.entity.EntityLiving import EntityLiving
+# cython: language_level=3
 
-import math
+from libc.math cimport sqrt, atan2, pi
 
-class EntityCreature(EntityLiving):
+from mc.net.minecraft.game.entity.Entity cimport Entity
+from mc.net.minecraft.game.entity.EntityLiving cimport EntityLiving
+from mc.net.minecraft.game.level.World cimport World
+from mc.net.minecraft.game.physics.Vec3D import Vec3D
 
-    def __init__(self, world):
+cdef class EntityCreature(EntityLiving):
+
+    cdef:
+        object __pathToEntity
+        Entity __playerToAttack
+        public bint _hasAttacked
+
+    def __init__(self, World world):
         super().__init__(world)
         self.__pathToEntity = None
         self.__playerToAttack = None
         self._hasAttacked = False
 
     def _updatePlayerActionState(self):
+        cdef int toX, toY, toZ, i, posX, posY, posZ
+        cdef float xd, yd, zd, d, lastWeight, weight, w, x, y, z
+        cdef bint isInWater, isInLava
+
         self._hasAttacked = False
         if not self.__playerToAttack:
             self.__playerToAttack = self._findPlayerToAttack()
@@ -24,11 +38,13 @@ class EntityCreature(EntityLiving):
             xd = self.__playerToAttack.posX - self.posX
             yd = self.__playerToAttack.posY - self.posY
             zd = self.__playerToAttack.posZ - self.posZ
-            d = math.sqrt(xd * xd + yd * yd + zd * zd)
-            if not self._worldObj.rayTraceBlocks(
-                self.boundingBox.getAverageEdgeLength(),
-                self.__playerToAttack.boundingBox.getAverageEdgeLength()
-            ):
+            d = sqrt(xd * xd + yd * yd + zd * zd)
+            if not self._worldObj.rayTraceBlocks(Vec3D(self.posX,
+                                                       self.posY + self._getEyeHeight(),
+                                                       self.posZ),
+                                                 Vec3D(self.__playerToAttack.posX,
+                                                       self.__playerToAttack.posY + self.__playerToAttack._getEyeHeight(),
+                                                       self.__playerToAttack.posZ)):
                 self._attackEntity(self.__playerToAttack, d)
 
         if self._hasAttacked:
@@ -45,15 +61,15 @@ class EntityCreature(EntityLiving):
                 toZ = -1
                 lastWeight = -99999.0
                 for i in range(200):
-                    x = self.posX + self._rand.nextInt(21) - 10.0
-                    y = self.posY + self._rand.nextInt(9) - 4.0
-                    z = self.posZ + self._rand.nextInt(21) - 10.0
-                    weight = self._getBlockPathWeight(x, y, z)
+                    posX = <int>(self.posX + self._rand.nextInt(21) - 10.0)
+                    posY = <int>(self.posY + self._rand.nextInt(9) - 4.0)
+                    posZ = <int>(self.posZ + self._rand.nextInt(21) - 10.0)
+                    weight = self._getBlockPathWeight(posX, posY, posZ)
                     if weight > lastWeight:
                         lastWeight = weight
-                        toX = x
-                        toY = y
-                        toZ = z
+                        toX = posX
+                        toY = posY
+                        toZ = posZ
 
                 if toX > 0:
                     self.__pathToEntity = self._worldObj.pathFinder.createEntityPath(
@@ -91,7 +107,7 @@ class EntityCreature(EntityLiving):
                 xd = posVec.xCoord - self.posX
                 yd = posVec.yCoord - self.posY
                 zd = posVec.zCoord - self.posZ
-                self.rotationYaw = (math.atan2(zd, xd) * 180.0 / math.pi) - 90.0
+                self.rotationYaw = (atan2(zd, xd) * 180.0 / pi) - 90.0
                 self._moveForward = self._moveSpeed
                 if yd > 0.0:
                     self._isJumping = True
@@ -99,14 +115,15 @@ class EntityCreature(EntityLiving):
             if isInWater or isInLava:
                 self._isJumping = self._rand.nextFloat() < 0.8
 
-    def _attackEntity(self, entity, distance):
+    def _attackEntity(self, Entity entity, float distance):
         pass
 
-    def _getBlockPathWeight(self, x, y, z):
+    def _getBlockPathWeight(self, int x, int y, int z):
         return 0.0
 
     def _findPlayerToAttack(self):
         return None
 
-    def getCanSpawnHere(self, x, y, z):
-        return self._getBlockPathWeight(int(x), int(y), int(z)) >= 0.0
+    def getCanSpawnHere(self, float x, float y, float z):
+        return super().getCanSpawnHere(x, y, z) and \
+               self._getBlockPathWeight(<int>x, <int>y, <int>z) >= 0.0

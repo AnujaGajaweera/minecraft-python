@@ -42,10 +42,8 @@ cdef class EntityMap:
         self.__slot.init(entity.lastTickPosX, entity.lastTickPosY,
                          entity.lastTickPosZ).remove(entity)
         self.__slot.init(entity.posX, entity.posY, entity.posZ).remove(entity)
-        try:
+        if entity in self.all:
             self.all.remove(entity)
-        except:
-            pass
 
     cdef list getEntities(self, Entity oEntity, float x0, float y0, float z0,
                           float x1, float y1, float z1):
@@ -91,10 +89,8 @@ cdef class EntityMap:
             entity.lastTickPosZ = entity.posZ
             entity.onEntityUpdate()
             if entity.isDead:
-                try:
+                if entity in self.all:
                     self.all.remove(entity)
-                except:
-                    pass
 
                 self.__slot.init(entity.lastTickPosX,
                                  entity.lastTickPosY,

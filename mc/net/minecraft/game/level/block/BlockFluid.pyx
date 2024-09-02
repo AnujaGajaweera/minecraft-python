@@ -76,7 +76,7 @@ cdef class BlockFluid(Block):
     cpdef bint _canFlow(self, World world, int x, int y, int z):
         cdef int xx, yy, zz
 
-        if not world.getBlockMaterial(x, y, z).isTransparent():
+        if not world.getBlockMaterial(x, y, z).liquidSolidCheck():
             return False
 
         if self.material == Material.water:
@@ -172,25 +172,25 @@ cdef class BlockFluid(Block):
             posZ = z + random.nextFloat()
             world.spawnParticle('lava', posX, posY, posZ, 0.0, 0.0, 0.0)
         if self.material == Material.water:
-            if BlockFluid.__checkEdges(world, x + 1, y, z):
+            if BlockFluid.__liquidAirCheck(world, x + 1, y, z):
                 for i in range(4):
                     world.spawnParticle('splash', (x + 1) + 2.0 / 16.0, y,
                                         z + random.nextFloat(), 0.0, 0.0, 0.0)
-            if BlockFluid.__checkEdges(world, x - 1, y, z):
+            if BlockFluid.__liquidAirCheck(world, x - 1, y, z):
                 for i in range(4):
                     world.spawnParticle('splash', x - 2.0 / 16.0, y,
                                         z + random.nextFloat(), 0.0, 0.0, 0.0)
-            if BlockFluid.__checkEdges(world, x, y, z + 1):
+            if BlockFluid.__liquidAirCheck(world, x, y, z + 1):
                 for i in range(4):
                     world.spawnParticle('splash', x + random.nextFloat(), y,
                                         (z + 1) + 2.0 / 16.0, 0.0, 0.0, 0.0)
-            if BlockFluid.__checkEdges(world, x, y, z - 1):
+            if BlockFluid.__liquidAirCheck(world, x, y, z - 1):
                 for i in range(4):
                     world.spawnParticle('splash', x + random.nextFloat(), y,
                                         z - 2.0 / 16.0, 0.0, 0.0, 0.0)
 
     @staticmethod
-    cdef bint __checkEdges(World world, int x, int y, int z):
+    cdef bint __liquidAirCheck(World world, int x, int y, int z):
         material = world.getBlockMaterial(x, y, z)
         matBelow = world.getBlockMaterial(x, y - 1, z)
         if not material.getIsSolid() and not material.getIsLiquid():

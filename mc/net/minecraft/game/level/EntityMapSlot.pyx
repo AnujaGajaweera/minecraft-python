@@ -34,9 +34,9 @@ cdef class EntityMapSlot:
                                         self.__entityMap.width + self.posX].append(entity)
 
     cdef remove(self, entity):
-        if self.posX >= 0 and self.posY >= 0 and self.posZ >= 0:
-            try:
-                self.__entityMap.entityGrid[(self.posZ * self.__entityMap.depth + self.posY) * \
-                                            self.__entityMap.width + self.posX].remove(entity)
-            except:
-                pass
+        if self.posX >= 0 and self.posY >= 0 and self.posZ >= 0 and (
+            entity in self.__entityMap.entityGrid[(self.posZ * self.__entityMap.depth + \
+                self.posY) * self.__entityMap.width + self.posX]
+        ):
+            self.__entityMap.entityGrid[(self.posZ * self.__entityMap.depth + self.posY) * \
+                                        self.__entityMap.width + self.posX].remove(entity)

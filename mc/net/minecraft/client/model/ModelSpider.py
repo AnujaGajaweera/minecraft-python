@@ -41,7 +41,7 @@ class ModelSpider(ModelBase):
         self.__spiderLeg8.setRotationPoint(4.0, 15.0, -1.0)
 
     def render(self, x, y, z, xRot, yRot, zRot):
-        self.setRotationAngles(x, y, 0.0, xRot, yRot, 1.0)
+        self.setRotationAngles(x, y, z, xRot, yRot, 1.0)
         self.__spiderHead.render(1.0)
         self.__spiderNeck.render(1.0)
         self.__spiderBody.render(1.0)

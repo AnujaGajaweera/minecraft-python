@@ -3,7 +3,7 @@ from mc.JavaUtils import random
 
 class EntitySmokeFX(EntityFX):
 
-    def __init__(self, world, x, y, z):
+    def __init__(self, world, x, y, z, scale=1.0):
         super().__init__(world, x, y, z, 0.0, 0.0, 0.0)
         self._motionX1 *= 0.1
         self._motionY1 *= 0.1
@@ -12,10 +12,16 @@ class EntitySmokeFX(EntityFX):
         self._particleGreen = self._particleRed
         self._particleBlue = self._particleRed
         self._particleScale *= 12.0 / 16.0
+        self._particleScale *= scale
+        self.__smokeParticleScale = self._particleScale
         self._particleMaxAge = int(8.0 / (random() * 0.8 + 0.2))
-        self.noClip = True
+        self._particleMaxAge = int(self._particleMaxAge * scale)
+        self.noClip = False
 
     def renderParticle(self, t, a, xa, ya, za, xa2, ya2):
+        scale = (self._particleAge + a) / self._particleMaxAge * 32.0
+        scale = min(max(scale, 0.0), 1.0)
+        self._particleScale = self.__smokeParticleScale * scale
         super().renderParticle(t, a, xa, ya, za, xa2, ya2)
 
     def onEntityUpdate(self):

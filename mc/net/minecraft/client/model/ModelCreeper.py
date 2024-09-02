@@ -29,7 +29,7 @@ class ModelCreeper(ModelBase):
         self.__leg4.setRotationPoint(2.0, 16.0, -4.0)
 
     def render(self, x, y, z, xRot, yRot, zRot):
-        self.setRotationAngles(x, y, 0.0, xRot, yRot, 1.0)
+        self.setRotationAngles(x, y, z, xRot, yRot, 1.0)
         self.__head.render(1.0)
         self.__body.render(1.0)
         self.__leg1.render(1.0)

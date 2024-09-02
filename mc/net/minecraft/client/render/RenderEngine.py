@@ -1,3 +1,4 @@
+from mc.net.minecraft.client.render.ThreadDownloadImageData import ThreadDownloadImageData
 from mc.JavaUtils import BufferUtils
 from mc import Resources
 from pyglet import gl
@@ -13,10 +14,8 @@ class RenderEngine:
         self.__singleIntBuffer = gl.GLuint(1)
         self.__imageData = BufferUtils.createByteBuffer(262144)
         self.__textureList = []
+        self.__urlToImageDataMap = {}
         self.__clampTexture = False
-
-    def setClampTexture(self, clampTexture):
-        self.__clampTexture = clampTexture
 
     def getTexture(self, resourceName):
         if resourceName in self.__textureMap:
@@ -25,19 +24,18 @@ class RenderEngine:
             gl.glGenTextures(1, ctypes.byref(self.__singleIntBuffer))
             id_ = self.__singleIntBuffer.value
             if resourceName.startswith('##'):
-                self.__setupTexture(RenderEngine.__unwrapImageByColumns(Resources.textures[resourceName]), id_)
+                self.__setupTexture(RenderEngine.__unwrapImageByColumns(
+                        Resources.textures[resourceName[3:]]
+                    ), id_)
+            if resourceName.startswith('%%'):
+                self.__clampTexture = True
+                self.__setupTexture(Resources.textures[resourceName[3:]], id_)
+                self.__clampTexture = False
             else:
                 self.__setupTexture(Resources.textures[resourceName], id_)
 
             self.__textureMap[resourceName] = id_
             return id_
-
-    def getTextureImg(self, img):
-        gl.glGenTextures(1, ctypes.byref(self.__singleIntBuffer))
-        id_ = self.__singleIntBuffer.value
-        self.__setupTexture(img, id_)
-        self.__textureContentsMap[id_] = img
-        return id_
 
     @staticmethod
     def __unwrapImageByColumns(img):
@@ -57,9 +55,6 @@ class RenderEngine:
         if not isinstance(img, tuple):
             w = img.width
             h = img.height
-            if h > 32:
-                img.crop((0, 32, 64, 32))
-                h = 32
             rgb = list(img.getdata())
         else:
             w = img[0]
@@ -125,6 +120,55 @@ class RenderEngine:
         self.__imageData.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, w, h,
                                       0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE)
 
+    def getTextureForDownloadableImage(self, skinUrl, texture):
+        downloadThread = self.__urlToImageDataMap.get(skinUrl)
+        if downloadThread and downloadThread.image and \
+           not downloadThread.textureSetupComplete:
+            if downloadThread.textureName < 0:
+                gl.glGenTextures(1, ctypes.byref(self.__singleIntBuffer))
+                id_ = self.__singleIntBuffer.value
+                self.__setupTexture(downloadThread.image, id_)
+                self.__textureContentsMap[id_] = downloadThread.image
+                downloadThread.textureName = id_
+            else:
+                self.__setupTexture(downloadThread.image, downloadThread.textureName)
+
+            downloadThread.textureSetupComplete = True
+
+        if downloadThread and downloadThread.textureName >= 0:
+            return downloadThread.textureName
+        else:
+            return self.getTexture(texture)
+
+    def obtainImageData(self, skinUrl, bufferDownload):
+        downloadThread = self.__urlToImageDataMap.get(skinUrl)
+        if downloadThread:
+            downloadThread.referenceCount += 1
+        else:
+            self.__urlToImageDataMap[skinUrl] = ThreadDownloadImageData(
+                skinUrl, bufferDownload
+            )
+
+        return downloadThread
+
+    def releaseImageData(self, skinUrl):
+        downloadThread = self.__urlToImageDataMap.get(skinUrl)
+        if not downloadThread:
+            return
+
+        downloadThread.referenceCount -= 1
+        if downloadThread.referenceCount != 0:
+            return
+
+        if downloadThread.textureName >= 0:
+            if downloadThread.textureName in self.__textureContentsMap:
+                del self.__textureContentsMap[downloadThread.textureName]
+
+            self.__singleIntBuffer = gl.GLuint(downloadThread.textureName)
+            gl.glDeleteTextures(1, self.__singleIntBuffer)
+
+        del self.__urlToImageDataMap[skinUrl]
+
     def registerTextureFX(self, textureFx):
         self.__textureList.append(textureFx)
         textureFx.onTick()
@@ -157,10 +201,24 @@ class RenderEngine:
         for id_, img in self.__textureContentsMap.items():
             self.__setupTexture(img, id_)
 
+        for downloadThread in self.__urlToImageDataMap.values():
+            downloadThread.textureSetupComplete = False
+
         for string, id_ in self.__textureMap.items():
             if string.startswith('##'):
-                img = RenderEngine.__unwrapImageByColumns(Resources.textures[string[2:]])
+                img = RenderEngine.__unwrapImageByColumns(
+                    Resources.textures[string[3:]]
+                )
+            elif string.startswith('%%'):
+                self.__clampTexture = True
+                img = Resources.textures[string[3:]]
+                self.__clampTexture = False
             else:
                 img = Resources.textures[string]
 
                 self.__setupTexture(img, id_)
+
+    @staticmethod
+    def bindTexture(tex):
+        if tex >= 0:
+            gl.glBindTexture(gl.GL_TEXTURE_2D, tex)

@@ -10,6 +10,8 @@ from libc.stdlib cimport malloc, free
 from libc.math cimport sqrt, sin, cos, pi
 
 from mc.net.minecraft.game.level.World cimport World
+from mc.net.minecraft.game.level.MobSpawner import MobSpawner
+from mc.net.minecraft.game.level.block.Block cimport Block
 from mc.net.minecraft.game.level.block.Blocks import blocks
 from mc.net.minecraft.game.level.generator.noise.NoiseGeneratorDistort cimport NoiseGeneratorDistort
 from mc.net.minecraft.game.level.generator.noise.NoiseGeneratorOctaves cimport NoiseGeneratorOctaves
@@ -54,6 +56,10 @@ cdef class LevelGenerator:
         cdef NoiseGeneratorOctaves perlinNoise, islandNoise, perlinNoise2
         cdef World world
 
+        iterations = 1
+        if self.floatingGen:
+            iterations = (height - 64) // 48 + 1
+
         self.__guiLoading.displayProgressMessage('Generating level')
 
         world = World()
@@ -64,10 +70,6 @@ cdef class LevelGenerator:
         self.__depth = depth
         self.__height = height
         self.__blocksByteArray = <char*>malloc(sizeof(char) * (width * depth * height))
-
-        iterations = 1
-        if self.floatingGen:
-            iterations = (height - 64) // 48 + 1
 
         for i in range(iterations):
             self.__waterLevel = self.__height - 32 - i * 48
@@ -170,84 +172,69 @@ cdef class LevelGenerator:
                         if self.__blocksByteArray[(iz * d + iy) * w + ix] == 0:
                             self.__blocksByteArray[(iz * d + iy) * w + ix] = blockId
 
-            if i == iterations - 1:
-                self.__guiLoading.displayLoadingString('Carving..')
-
-                count = w * h * d // 256 // 64 << 1
-                stone = <int>blocks.stone.blockID
-                for _ in range(count):
-                    x = self.__rand.nextFloat() * w
-                    y = self.__rand.nextFloat() * h
-                    z = self.__rand.nextFloat() * d
-                    length = <int>((self.__rand.nextFloat() + self.__rand.nextFloat()) * 200.0)
-                    dir1 = self.__rand.nextFloat() * pi * 2.0
-                    dira1 = 0.0
-                    dir2 = self.__rand.nextFloat() * pi * 2.0
-                    dira2 = 0.0
-                    dir3 = self.__rand.nextFloat() * self.__rand.nextFloat()
-
-                    for l in range(length):
-                        x += sin(dir1) * cos(dir2)
-                        z += cos(dir1) * cos(dir2)
-                        y += sin(dir2)
-
-                        dir1 += dira1 * 0.2
-                        dira1 *= 0.9
-                        dira1 += self.__rand.nextFloat() - self.__rand.nextFloat()
-
-                        dir2 += dira2 * 0.5
-                        dir2 *= 0.5
-                        dira2 *= 12.0 / 16.0
-                        dira2 += self.__rand.nextFloat() - self.__rand.nextFloat()
-
-                        if self.__rand.nextFloat() >= 0.25:
-                            x += (self.__rand.nextFloat() * 4.0 - 2.0) * 0.2
-                            y += (self.__rand.nextFloat() * 4.0 - 2.0) * 0.2
-                            z += (self.__rand.nextFloat() * 4.0 - 2.0) * 0.2
-                            size = (h - y) / h
-                            size = 1.2 + (size * 3.5 + 1.0) * dir3
-                            size = sin(l * pi / length) * size
-                            for xx in range(<int>(x - size), <int>(x + size) + 1):
-                                for yy in range(<int>(y - size), <int>(y + size) + 1):
-                                    for zz in range(<int>(z - size), <int>(z + size) + 1):
-                                        xd = xx - x
-                                        yd = yy - y
-                                        zd = zz - z
-                                        caveD = xd * xd + yd * yd * 2.0 + zd * zd
-                                        if caveD < size * size and xx > 0 and yy > 0 and \
-                                           zz > 0 and xx < w - 1 and yy < h - 1 and \
-                                           zz < d - 1:
-                                            blockId = (yy * d + zz) * w + xx
-                                            if self.__blocksByteArray[blockId] == stone:
-                                                self.__blocksByteArray[blockId] = 0
-
-                coal = self.__populateOre(blocks.oreCoal.blockID,
-                                          1000, 10, 1, 5, (h << 2) // 5)
-                iron = self.__populateOre(blocks.oreIron.blockID,
-                                          800, 8, 2, 5, h * 3 // 5)
-                gold = self.__populateOre(blocks.oreGold.blockID,
-                                          500, 6, 3, 5, (h << 1) // 5)
-                diamonds = self.__populateOre(blocks.oreDiamond.blockID,
-                                              800, 2, 4, 5, h // 5)
-                print(f'Coal: {coal}, Iron: {iron}, Gold: {gold}, Diamond: {diamonds}')
-
-            self.__guiLoading.displayLoadingString('Watering..')
-            self.__liquidThemeSpawner()
-
             self.__guiLoading.displayLoadingString('Melting..')
             self.__lavaGen()
 
             self.__guiLoading.displayLoadingString('Growing..')
             self.__growGravelAndSand(heightmap)
-            self.__guiLoading.displayLoadingString('Planting..')
-            self.__growPlants(heightmap)
-            self.__growMushrooms(heightmap)
 
-            free(heightmap)
+        free(heightmap)
 
-        b = bytearray(self.__width * self.__depth * self.__height)
-        for i in range(len(b)):
-            b[i] = self.__blocksByteArray[i]
+        self.__guiLoading.displayLoadingString('Carving..')
+
+        count = w * h * d // 256 // 64 << 1
+        stone = <int>blocks.stone.blockID
+        for _ in range(count):
+            x = self.__rand.nextFloat() * w
+            y = self.__rand.nextFloat() * h
+            z = self.__rand.nextFloat() * d
+            length = <int>((self.__rand.nextFloat() + self.__rand.nextFloat()) * 200.0)
+            dir1 = self.__rand.nextFloat() * pi * 2.0
+            dira1 = 0.0
+            dir2 = self.__rand.nextFloat() * pi * 2.0
+            dira2 = 0.0
+            dir3 = self.__rand.nextFloat() * self.__rand.nextFloat()
+
+            for l in range(length):
+                x += sin(dir1) * cos(dir2)
+                z += cos(dir1) * cos(dir2)
+                y += sin(dir2)
+
+                dir1 += dira1 * 0.2
+                dira1 *= 0.9
+                dira1 += self.__rand.nextFloat() - self.__rand.nextFloat()
+
+                dir2 += dira2 * 0.5
+                dir2 *= 0.5
+                dira2 *= 12.0 / 16.0
+                dira2 += self.__rand.nextFloat() - self.__rand.nextFloat()
+
+                if self.__rand.nextFloat() >= 0.25:
+                    x += (self.__rand.nextFloat() * 4.0 - 2.0) * 0.2
+                    y += (self.__rand.nextFloat() * 4.0 - 2.0) * 0.2
+                    z += (self.__rand.nextFloat() * 4.0 - 2.0) * 0.2
+                    size = (h - y) / h
+                    size = 1.2 + (size * 3.5 + 1.0) * dir3
+                    size = sin(l * pi / length) * size
+                    for xx in range(<int>(x - size), <int>(x + size) + 1):
+                        for yy in range(<int>(y - size), <int>(y + size) + 1):
+                            for zz in range(<int>(z - size), <int>(z + size) + 1):
+                                xd = xx - x
+                                yd = yy - y
+                                zd = zz - z
+                                caveD = xd * xd + yd * yd * 2.0 + zd * zd
+                                if caveD < size * size and xx > 0 and yy > 0 and \
+                                   zz > 0 and xx < w - 1 and yy < h - 1 and \
+                                   zz < d - 1:
+                                    blockId = (yy * d + zz) * w + xx
+                                    if self.__blocksByteArray[blockId] == stone:
+                                        self.__blocksByteArray[blockId] = 0
+
+        coal = self.__populateOre(blocks.oreCoal.blockID, 1000, 10, (h << 2) // 5)
+        iron = self.__populateOre(blocks.oreIron.blockID, 800, 8, h * 3 // 5)
+        gold = self.__populateOre(blocks.oreGold.blockID, 500, 6, (h << 1) // 5)
+        diamonds = self.__populateOre(blocks.oreDiamond.blockID, 800, 4, h // 5)
+        print(f'Coal: {coal}, Iron: {iron}, Gold: {gold}, Diamond: {diamonds}')
 
         world.cloudHeight = self.__height + 2
         if self.floatingGen:
@@ -260,26 +247,42 @@ cdef class LevelGenerator:
         else:
             self.__groundLevel = self.__waterLevel - 9
 
+        self.__guiLoading.displayLoadingString('Watering..')
+        self.__liquidThemeSpawner()
+
         if self.levelType == 1:
             world.cloudColor = 2164736
             world.fogColor = 1049600
             world.skyColor = 1049600
-            world.skyBrightness = 0.5
+            world.skyBrightness = 7
             world.defaultFluid = blocks.lavaMoving.blockID
             if self.floatingGen:
                 world.cloudHeight = self.__height + 2
                 self.__waterLevel = -16
 
+        b = bytearray(self.__width * self.__depth * self.__height)
+        for i in range(len(b)):
+            b[i] = self.__blocksByteArray[i]
+
         world.waterLevel = self.__waterLevel
         world.groundLevel = self.__groundLevel
         self.__guiLoading.displayLoadingString('Calculating light..')
         world.generate(width, height, depth, b)
-        self.__guiLoading.displayLoadingString('Post-processing..')
 
+        self.__guiLoading.displayLoadingString('Planting..')
         if self.levelType != 1:
             self.__growGrassOnDirt(world)
 
         self.__growTrees(world)
+        self.__populateFlowersAndMushrooms(world, blocks.plantYellow, 100)
+        self.__populateFlowersAndMushrooms(world, blocks.plantRed, 100)
+        self.__populateFlowersAndMushrooms(world, blocks.mushroomBrown, 50)
+        self.__populateFlowersAndMushrooms(world, blocks.mushroomRed, 50)
+
+        self.__guiLoading.displayLoadingString('Spawning..')
+        spawner = MobSpawner(world)
+        for i in range(1000):
+            spawner.performSpawning()
 
         world.createTime = getMillis()
         world.authorName = userName
@@ -295,7 +298,7 @@ cdef class LevelGenerator:
             for y in range(self.__height):
                 for z in range(self.__depth):
                     if world.getBlockId(x, y, z) == blocks.dirt.blockID and \
-                       world.isHalfLit(x, y + 1, z) and not \
+                       world.getBlockLightValue(x, y + 1, z) >= 4 and not \
                        world.getBlockMaterial(x, y + 1, z).getCanBlockGrass():
                         world.setBlock(x, y, z, blocks.grass.blockID)
 
@@ -336,51 +339,44 @@ cdef class LevelGenerator:
     cdef __growTrees(self, World world):
         cdef int size, xx, x, y, z, yy, width, height, depth, zz
 
-        size = self.__width * self.__depth * self.__height // 32000
+        size = self.__width * self.__depth * self.__height // 80000
         for xx in range(size):
             width = self.__rand.nextInt(self.__width)
             height = self.__rand.nextInt(self.__height)
             depth = self.__rand.nextInt(self.__depth)
-            for yy in range(100):
+            for yy in range(25):
                 x = width
                 y = height
                 z = depth
                 for zz in range(20):
-                    x += self.__rand.nextInt(6) - self.__rand.nextInt(6)
+                    x += self.__rand.nextInt(12) - self.__rand.nextInt(12)
                     y += self.__rand.nextInt(3) - self.__rand.nextInt(3)
-                    z += self.__rand.nextInt(6) - self.__rand.nextInt(6)
+                    z += self.__rand.nextInt(12) - self.__rand.nextInt(12)
                     if x >= 0 and y >= 0 and z >= 0 and x < self.__width and \
-                       y < self.__height and z < self.__depth and self.__rand.nextInt(4) == 0:
+                       y < self.__height and z < self.__depth:
                         world.growTrees(x, y, z)
 
-    cdef __growPlants(self, int* heightmap):
-        cdef int i, j, k, size, kind, w, d, x, y, z, block, blockUnder
+    cdef __populateFlowersAndMushrooms(self, World world, Block flower, int freq):
+        cdef int size, i, j, k, w, h, d, x, y, z
 
-        size = self.__width * self.__depth // 3000
+        size = self.__width * self.__depth * self.__height * freq // 1600000
         for i in range(size):
-            kind = self.__rand.nextInt(2)
             w = self.__rand.nextInt(self.__width)
+            h = self.__rand.nextInt(self.__height)
             d = self.__rand.nextInt(self.__depth)
             for j in range(10):
                 x = w
+                y = h
                 z = d
-                for k in range(5):
-                    x += self.__rand.nextInt(6) - self.__rand.nextInt(6)
-                    z += self.__rand.nextInt(6) - self.__rand.nextInt(6)
-                    if (kind >= 2 and self.__rand.nextInt(4) != 0) or x < 0 or z < 0 or x >= self.__width or z >= self.__depth:
-                        continue
-
-                    y = heightmap[x + z * self.__width] + 1
-                    if self.__blocksByteArray[(y * self.__depth + z) * self.__width + x] & 0xFF:
-                        continue
-
-                    block = (y * self.__depth + z) * self.__width + x
-                    blockUnder = self.__blocksByteArray[((y - 1) * self.__depth + z) * self.__width + x] & 0xFF
-                    if blockUnder == blocks.grass.blockID or blockUnder == blocks.dirt.blockID:
-                        if kind == 0:
-                            self.__blocksByteArray[block] = blocks.plantYellow.blockID
-                        elif kind == 1:
-                            self.__blocksByteArray[block] = blocks.plantRed.blockID
+                for k in range(10):
+                    x += self.__rand.nextInt(4) - self.__rand.nextInt(4)
+                    y += self.__rand.nextInt(2) - self.__rand.nextInt(2)
+                    z += self.__rand.nextInt(4) - self.__rand.nextInt(4)
+                    if x >= 0 and z >= 0 and y > 0 and x < self.__width and \
+                       z < self.__depth and y < self.__height and \
+                       world.getBlockId(x, y, z) == 0 and \
+                       flower.canBlockStay(world, x, y, z):
+                        world.setBlockWithNotify(x, y, z, flower.blockID)
 
     cdef __growMushrooms(self, int* heightmap):
         cdef int block, size, kind, w, h, d, x, y, z
@@ -416,8 +412,7 @@ cdef class LevelGenerator:
                     elif kind == 1:
                         self.__blocksByteArray[block] = blocks.mushroomRed.blockID
 
-    cdef int __populateOre(self, int face, int freq, int volume,
-                           int _, int __, int maxHeight):
+    cdef int __populateOre(self, int face, int freq, int volume, int maxHeight):
         cdef int ores, w, d, h, size, i, steps, step, x, y, z, block
         cdef float x0, y0, z0, xChange, xDecay, yChange, yDecay, pop, xd, yd, zd
 
@@ -477,8 +472,8 @@ cdef class LevelGenerator:
                 self.__floodFill(ix, self.__waterLevel - 1, self.__depth - 1, 0, target)
 
             for iy in range(self.__depth):
-                self.__floodFill(0, self.__waterLevel - 1, iy, 0, target)
                 self.__floodFill(self.__width - 1, self.__waterLevel - 1, iy, 0, target)
+                self.__floodFill(0, self.__waterLevel - 1, iy, 0, target)
 
         toFlood = self.__width * self.__depth * self.__height // 1000
         for i in range(toFlood):

@@ -9,7 +9,10 @@ class BlockMushroom(BlockFlower):
     def _canThisPlantGrowOnThisBlockID(self, blockId):
         return self.blocks.opaqueCubeLookup[blockId]
 
-    def _checkFlowerChange(self, world, x, y, z):
-        below = world.getBlockId(x, y - 1, z)
-        if not world.isFullyLit(x, y, z) or not self.blocks.opaqueCubeLookup[below]:
-            world.setBlockWithNotify(x, y, z, 0)
+    def canBlockStay(self, world, x, y, z):
+        if world.getBlockLightValue(x, y, z) <= 13:
+            below = world.getBlockId(x, y - 1, z)
+            if self.blocks.opaqueCubeLookup[below]:
+                return True
+
+        return False

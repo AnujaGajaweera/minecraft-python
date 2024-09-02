@@ -27,4 +27,4 @@ cdef class BlockFluid(Block):
     cdef int getRenderBlockPass(self)
     cpdef void randomDisplayTick(self, World world, int x, int y, int z, Random random) except *
     @staticmethod
-    cdef bint __checkEdges(World world, int x, int y, int z)
+    cdef bint __liquidAirCheck(World world, int x, int y, int z)

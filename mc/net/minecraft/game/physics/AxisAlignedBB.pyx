@@ -253,8 +253,3 @@ cdef class AxisAlignedBB:
     cdef bint __isVecInXY(self, za):
         return False if not za else za.xCoord >= self.minX and za.xCoord <= self.maxX and \
                za.yCoord >= self.minY and za.yCoord <= self.maxY
-
-    def getAverageEdgeLength(self):
-        return Vec3D((self.maxX + self.minX) / 2.0,
-                     (self.maxY + self.minY) / 2.0,
-                     (self.maxZ + self.minZ) / 2.0)

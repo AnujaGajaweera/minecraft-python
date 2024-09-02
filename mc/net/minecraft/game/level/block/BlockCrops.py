@@ -13,6 +13,9 @@ class BlockCrops(BlockFlower):
 
     def updateTick(self, world, x, y, z, random):
         super().updateTick(world, x, y, z, random)
+        if world.getBlockLightValue(x, y + 1, z) < 9:
+            return
+
         ticks = world.getBlockMetadata(x, y, z)
         if ticks < 7:
             changeRate = 1.0
@@ -63,7 +66,7 @@ class BlockCrops(BlockFlower):
         from mc.net.minecraft.game.item.Items import items
         super().onBlockDestroyedByPlayer(world, x, y, z, metadata)
         for i in range(3):
-            if world.rand.nextInt(24) <= metadata:
+            if world.rand.nextInt(18) <= metadata:
                 dropX = world.rand.nextFloat() * 0.7 + 0.15
                 dropY = world.rand.nextFloat() * 0.7 + 0.15
                 dropZ = world.rand.nextFloat() * 0.7 + 0.15

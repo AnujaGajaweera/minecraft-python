@@ -27,8 +27,8 @@ cdef unsigned int floatToRawIntBits(float x):
 
 cdef class Random:
 
-    def __init__(self):
-        self.setSeed(time.perf_counter_ns())
+    def __init__(self, long long seed = -1):
+        self.setSeed(seed if seed != -1 else time.perf_counter_ns())
         self.__haveNextNextGaussian = False
 
     def setSeed(self, long long seed):

@@ -4,6 +4,7 @@ from io import BytesIO
 from PIL import Image
 
 import urllib.request
+import traceback
 import json
 
 def getTextureInfo(properties):
@@ -11,22 +12,20 @@ def getTextureInfo(properties):
         if prop['name'] == 'textures':
             return json.loads(b64decode(prop['value'], validate=True).decode('utf-8'))
 
-class ThreadDownloadSkin(Thread):
+class ThreadDownloadImage(Thread):
 
-    def __init__(self, mc):
+    def __init__(self, imageData, location, buffer):
         super().__init__()
-        self.__mc = mc
+        self.__imageData = imageData
+        self.__location = location
+        self.__buffer = buffer
 
     def run(self):
-        if not self.__mc.session:
-            return
-
-        username = self.__mc.session.username
-        if not username:
+        if not self.__location:
             return
 
         try:
-            with urllib.request.urlopen(f'https://api.mojang.com/users/profiles/minecraft/{username}') as r:
+            with urllib.request.urlopen(self.__location) as r:
                 if r.code != 200:
                     return
 
@@ -50,5 +49,12 @@ class ThreadDownloadSkin(Thread):
             with urllib.request.urlopen(skinUrl) as r:
                 if r.code != 200:
                     return
+
+                if self.__buffer:
+                    self.__imageData.image = self.__buffer.parseUserSkin(
+                        Image.open(BytesIO(r.read())).convert('RGBA')
+                    )
+                else:
+                    self.__imageData.image = Image.open(BytesIO(r.read())).convert('RGBA')
         except:
-            pass
+            print(traceback.format_exc())

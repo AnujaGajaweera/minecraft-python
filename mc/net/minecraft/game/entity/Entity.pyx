@@ -58,6 +58,7 @@ cdef class Entity:
         self.heartsLife = 0
         self.air = Entity.TOTAL_AIR_SUPPLY
         self.__firstUpdate = True
+        self.skinUrl = ''
 
     def __init__(self, world):
         self._worldObj = world
@@ -319,7 +320,7 @@ cdef class Entity:
             if self.distanceWalkedModified > self.__nextStepDistance and block > 0:
                 self.__nextStepDistance += 1
                 sound = blocks.blocksList[block].stepSound
-                self._worldObj.playSoundAtEntity(self, 'step.' + sound.sound,
+                self._worldObj.playSoundAtEntity(self, sound.stepSoundDirStep(),
                                                  sound.soundVolume * 0.15, sound.soundPitch)
                 blocks.blocksList[block].onEntityWalking(self._worldObj, walkX, walkY, walkZ)
 
@@ -363,7 +364,7 @@ cdef class Entity:
     cpdef float _getEyeHeight(self):
         return 0.0
 
-    cpdef bint handleLavaMovement(self):
+    cdef bint handleLavaMovement(self):
         return self._worldObj.handleMaterialAcceleration(self.boundingBox.expand(0.0, -0.4, 0.0),
                                                          Material.lava)
 
@@ -444,6 +445,9 @@ cdef class Entity:
     def canBePushed(self):
         return False
 
+    def getTexture(self):
+        return None
+
     def shouldRender(self, vec):
         cdef float xd, yd, zd
         xd = self.posX - vec.xCoord
@@ -504,9 +508,15 @@ cdef class Entity:
     def getShadowSize(self):
         return self.height / 2.0
 
-    def dropItemWithOffset(self, item, int amount):
-        self._worldObj.spawnEntityInWorld(EntityItem(self._worldObj, self.posX, self.posY,
-                                                     self.posZ, ItemStack(item, 1)))
+    def dropItemWithOffset(self, int item, int amount):
+        return self.entityDropItem(item, 1, 0.0)
+
+    def entityDropItem(self, int item, int amount, float yOffset):
+        entity = EntityItem(self._worldObj, self.posX, self.posY + yOffset,
+                            self.posZ, ItemStack(item, amount))
+        entity.delayBeforeCanPickup = 10
+        self._worldObj.spawnEntityInWorld(entity)
+        return entity
 
     def isEntityAlive(self):
         return not self.isDead

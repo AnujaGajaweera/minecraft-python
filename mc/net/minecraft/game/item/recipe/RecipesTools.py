@@ -19,7 +19,6 @@ class RecipesTools:
                 toolResult = self.__recipeItems[toolType + 1][toolIdx]
                 craftingManager.addRecipe(
                     ItemStack(toolResult),
-                    [self.__recipePatterns[toolType][0], self.__recipePatterns[toolType][1],
-                     self.__recipePatterns[toolType][2], ord('#'), items.stick,
+                    [self.__recipePatterns[toolType], ord('#'), items.stick,
                      ord('X'), toolItem]
                 )

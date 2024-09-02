@@ -22,14 +22,15 @@ class EntityPlayer(EntityLiving):
             world.releaseEntitySkin(self)
 
         self.setPositionAndRotation(world.xSpawn, world.ySpawn, world.zSpawn, 0.0, 0.0)
+        self.userType = 0
+        self._getScore = 0
+        self.prevCameraYaw = 0.0
+        self.cameraYaw = 0.0
         self.yOffset = 1.62
         self.inventory = InventoryPlayer()
         self.health = EntityPlayer.MAX_HEALTH
         self.fireResistance = EntityPlayer.FIRE_RESISTANCE
-        self.userType = 0
-        self.prevCameraYaw = 0.0
-        self.cameraYaw = 0.0
-        self._getScore = 0
+        self._texture = 'char.png'
 
     def preparePlayerToSpawn(self):
         self.yOffset = 1.62
@@ -85,18 +86,23 @@ class EntityPlayer(EntityLiving):
     def setEntityDead(self):
         pass
 
-    def dropPlayerItemWithRandomChoice(self, stack):
+    def dropPlayerItem(self, stack):
+        self.dropPlayerItemWithRandomChoice(stack, False)
+
+    def dropPlayerItemWithRandomChoice(self, stack, _):
         if not stack:
             return
 
         item = EntityItem(self._worldObj, self.posX, self.posY - 0.3,
                           self.posZ, stack)
         item.delayBeforeCanPickup = 40
-        item.motionX = math.sin(self.rotationYaw / 180.0 * math.pi) * 0.2
-        item.motionZ = -math.cos(self.rotationYaw / 180.0 * math.pi) * 0.2
-        item.motionY = 0.2
+        item.motionX = math.sin(self.rotationYaw / 180.0 * math.pi) * \
+                       math.cos(self.rotationPitch / 180.0 * math.pi) * 0.3
+        item.motionZ = -math.cos(self.rotationYaw / 180.0 * math.pi) * \
+                       math.cos(self.rotationPitch / 180.0 * math.pi) * 0.3
+        item.motionY = -math.sin(self.rotationPitch / 180.0 * math.pi) * 0.3 + 0.1
         angle = self._rand.nextFloat() * math.pi * 2.0
-        scale = self._rand.nextFloat() * 0.1
+        scale = 0.02 * self._rand.nextFloat()
         item.motionX += math.cos(angle) * scale
         item.motionY += (self._rand.nextFloat() - self._rand.nextFloat()) * 0.1
         item.motionZ += math.sin(angle) * scale

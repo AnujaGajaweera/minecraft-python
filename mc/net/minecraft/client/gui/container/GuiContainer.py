@@ -155,10 +155,10 @@ class GuiContainer(GuiScreen):
             h = (self.height - self.ySize) // 2
             if xm < w or ym < h or xm >= w + self.xSize or ym >= h + self.xSize:
                 if button == window.mouse.LEFT:
-                    self.mc.thePlayer.dropPlayerItemWithRandomChoice(self.__itemStack)
+                    self.mc.thePlayer.dropPlayerItem(self.__itemStack)
                     self.__itemStack = None
                 elif button == window.mouse.RIGHT:
-                    self.mc.thePlayer.dropPlayerItemWithRandomChoice(self.__itemStack.splitStack(1))
+                    self.mc.thePlayer.dropPlayerItem(self.__itemStack.splitStack(1))
                     if self.__itemStack.stackSize == 0:
                         self.__itemStack = None
 
@@ -168,7 +168,7 @@ class GuiContainer(GuiScreen):
 
     def onGuiClosed(self):
         if self.__itemStack:
-            self.mc.thePlayer.dropPlayerItemWithRandomChoice(self.__itemStack)
+            self.mc.thePlayer.dropPlayerItem(self.__itemStack)
 
     def guiCraftingItemsCheck(self):
         pass

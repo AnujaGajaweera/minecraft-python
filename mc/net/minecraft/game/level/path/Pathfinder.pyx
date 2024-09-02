@@ -1,7 +1,7 @@
 # cython: language_level=3
 
-from mc.net.minecraft.game.level.path.Path import Path
-from mc.net.minecraft.game.level.path.PathPoint import PathPoint
+from mc.net.minecraft.game.level.path.Path cimport Path
+from mc.net.minecraft.game.level.path.PathPoint cimport PathPoint
 from mc.net.minecraft.game.level.path.PathEntity import PathEntity
 from mc.net.minecraft.game.level.material.Material import Material
 from mc.net.minecraft.game.level.World cimport World
@@ -15,14 +15,16 @@ cdef class Pathfinder:
         self.__pointMap = {}
         self.__pathOptions = [None] * 32
 
-    def createEntityPathTo(self, Entity fromEntity, Entity toEntity, float distance):
+    cdef createEntityPathTo(self, Entity fromEntity, Entity toEntity, float distance):
         return self.__addToPath(fromEntity, toEntity.posX, toEntity.boundingBox.minY,
                                 toEntity.posZ, 16.0)
 
-    def createEntityPath(self, Entity entity, int x, int y, int z, float distance):
+    cdef createEntityPath(self, Entity entity, int x, int y, int z, float distance):
         return self.__addToPath(entity, x + 0.5, y + 0.5, z + 0.5, 16.0)
 
     cdef __addToPath(self, Entity entity, float x, float y, float z, float distance):
+        cdef PathPoint entityPath, targetPath, sizePoint, fartherPoint, nextPoint, \
+                       south, west, east, north, point
         cdef int directions, i
         cdef char yOffset
         cdef float d
@@ -61,7 +63,7 @@ cdef class Pathfinder:
             directions = 0
             yOffset = 0
             if self.__getVerticalOffset(nextPoint.xCoord, nextPoint.yCoord + 1,
-                                        nextPoint.zCoord, sizePoint):
+                                        nextPoint.zCoord, sizePoint) > 0:
                 yOffset = 1
 
             south = self.__getSafePoint(entity, nextPoint.xCoord, nextPoint.yCoord,
@@ -101,28 +103,36 @@ cdef class Pathfinder:
                                                  point.distanceToNext
                         self.__path.addPoint(point)
 
-    cdef __getSafePoint(self, Entity entity, int x, int y, int z,
-                        sizePoint, int yOffset):
-        cdef int i
+    cdef PathPoint __getSafePoint(self, Entity entity, int x, int y, int z,
+                                  PathPoint sizePoint, int yOffset):
+        cdef PathPoint point
+        cdef int i, offset
+
         point = None
-        if self.__getVerticalOffset(x, y, z, sizePoint):
+        if self.__getVerticalOffset(x, y, z, sizePoint) > 0:
             point = self.__openPoint(x, y, z)
-        if not point and self.__getVerticalOffset(x, y + yOffset, z, sizePoint):
+        if not point and self.__getVerticalOffset(x, y + yOffset, z, sizePoint) > 0:
             point = self.__openPoint(x, y + yOffset, z)
 
         if point:
             i = 0
-            while y > 0 and self.__getVerticalOffset(x, y - 1, z, sizePoint):
+            for y in range(y, 0, -1):
+                offset = self.__getVerticalOffset(x, y - 1, z, sizePoint)
+                if offset <= 0:
+                    break
+                elif offset < 0:
+                    return None
+
                 i += 1
                 if i >= 4:
                     return None
 
-                y -= 1
-                point = self.__openPoint(x, y, z)
+                point = self.__openPoint(x, y - 1, z)
 
         return point
 
-    cdef __openPoint(self, int x, int y, int z):
+    cdef PathPoint __openPoint(self, int x, int y, int z):
+        cdef PathPoint point
         cdef int pos = x | y << 10 | z << 20
         point = self.__pointMap.get(pos)
         if not point:
@@ -131,35 +141,36 @@ cdef class Pathfinder:
 
         return point
 
-    cdef bint __getVerticalOffset(self, int x, int y, int z, sizePoint):
+    cdef int __getVerticalOffset(self, int x, int y, int z, PathPoint sizePoint):
         cdef int xx, yy, zz
         for xx in range(x, x + sizePoint.xCoord):
             if xx < 0 or xx >= self.__worldMap.width:
-                return False
+                return 0
 
             for yy in range(y, y + sizePoint.yCoord):
                 if yy < 0 or yy >= self.__worldMap.height:
-                    return False
+                    return 0
 
                 zz = z
                 while zz < z + sizePoint.zCoord:
                     if zz >= 0 and zz < self.__worldMap.length:
                         material = self.__worldMap.getBlockMaterial(x, y, z)
                         if material.getIsSolid():
-                            return False
+                            return 0
 
                         if material != Material.water and material != Material.lava:
                             zz += 1
                             continue
 
-                        return False
+                        return -1
 
-                    return False
+                    return 0
 
-        return True
+        return 1
 
     @staticmethod
-    cdef __createEntityPath(point):
+    cdef __createEntityPath(PathPoint point):
+        cdef PathPoint prev
         cdef int size = 1
         prev = point
         while prev.previous:

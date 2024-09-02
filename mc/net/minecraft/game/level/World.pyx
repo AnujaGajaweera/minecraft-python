@@ -6,13 +6,14 @@ import numpy as np
 cimport numpy as np
 
 from libc.stdlib cimport malloc, free
-from libc.math cimport sqrt, floor, isnan
+from libc.math cimport cos, pi, sqrt, floor, isnan
 
 from mc.net.minecraft.client.render.RenderGlobal cimport RenderGlobal
 from mc.net.minecraft.game.physics.MovingObjectPosition import MovingObjectPosition
 from mc.net.minecraft.game.level.material.Material import Material
 from mc.net.minecraft.game.physics.AxisAlignedBB cimport AxisAlignedBB
 from mc.net.minecraft.game.physics.Vec3D import Vec3D
+from mc.net.minecraft.game.level.Light cimport Light
 from mc.net.minecraft.game.level.EntityMap cimport EntityMap
 from mc.net.minecraft.game.level.block.Block cimport Block
 from mc.net.minecraft.game.level.block.Blocks import blocks
@@ -50,7 +51,7 @@ cdef class World:
 
         for i in range(16):
             br = 1.0 - i / 15.0
-            self.__lightBrightnessTable[i] = (1.0 - br) / (br * 3.0 + 1.0) * 0.9 + 0.1
+            self.__lightBrightnessTable[i] = (1.0 - br) / (br * 3.0 + 1.0) * 0.95 + 0.05
 
         for i, block in enumerate(blocks.blocksList):
             self.__isBlockNormal[i] = False if block is None else block.isOpaqueCube()
@@ -60,7 +61,7 @@ cdef class World:
 
         self.defaultFluid = blocks.waterMoving.blockID
 
-        self.__worldAccesses = set()
+        self.worldAccesses = []
         self.__tickList = set()
 
         self.map = {}
@@ -81,27 +82,30 @@ cdef class World:
 
         self.survivalWorld = True
 
-        self.skyBrightness = 1.0
+        self.skyBrightness = 15
+        self.skylightSubtracted = 15
 
         self.pathFinder = Pathfinder(self)
 
+        self.worldTime = 0
         self.difficultySetting = 2
+        self.__timeCycle = 24000
 
     def __dealloc__(self):
         free(self.blocks)
-        free(self.__data)
-        free(self.__heightMap)
+        free(self.data)
+        free(self.heightMap)
 
     def load(self):
         if not self.blocks:
             raise RuntimeError('The level is corrupt!')
 
-        self.__worldAccesses = set()
-        self.__heightMap = <int*>malloc(sizeof(int) * (self.width * self.length))
+        self.worldAccesses = []
+        self.heightMap = <int*>malloc(sizeof(int) * (self.width * self.length))
         for i in range(self.width * self.length):
-            self.__heightMap[i] = self.height
+            self.heightMap[i] = self.height
 
-        self.__updateSkylight(0, 0, self.width, self.length)
+        self.__light.updateSkylight(0, 0, self.width, self.length)
         self.__randId = self.rand.nextInt()
         self.__tickList = set()
 
@@ -109,7 +113,7 @@ cdef class World:
             self.entityMap = EntityMap(self.width, self.height, self.length)
 
     def generate(self, int w, int h, int d, bytearray b):
-        cdef int x, y, z, i, skyBrightness, br
+        cdef int x, y, z, i
         cdef char blockId
 
         self.width = w
@@ -119,8 +123,8 @@ cdef class World:
         self.__size = len(b)
 
         for i in range(256):
-            self.__lightOpacity[i] = blocks.lightOpacity[i]
-            self.__lightValue[i] = blocks.lightValue[i]
+            self.lightOpacity[i] = blocks.lightOpacity[i]
+            self.lightValue[i] = blocks.lightValue[i]
 
         for x in range(self.width):
             for z in range(self.length):
@@ -147,17 +151,18 @@ cdef class World:
 
                     y += 1
 
-        self.__data = <char*>malloc(sizeof(char) * len(b))
+        self.data = <char*>malloc(sizeof(char) * len(b))
         for i in range(len(b)):
             self.blocks[i] = b[i]
-            self.__data[i] = 0
+            self.data[i] = 0
 
-        self.__heightMap = <int*>malloc(sizeof(int) * (w * d))
+        self.heightMap = <int*>malloc(sizeof(int) * (w * d))
         for i in range(w * d):
-            self.__heightMap[i] = h
+            self.heightMap[i] = h
 
+        self.__light = Light(self)
         self.__calculateLighting()
-        for worldAccess in self.__worldAccesses:
+        for worldAccess in self.worldAccesses:
             worldAccess.loadRenderers()
 
         self.__tickList.clear()
@@ -166,7 +171,7 @@ cdef class World:
         gc.collect()
 
     def loadWorld(self, int w, int h, int d, bytearray b, bytearray data):
-        cdef int x, y, z, i, skyBrightness, br
+        cdef int x, y, z, i
         cdef char blockId
 
         self.width = w
@@ -176,8 +181,8 @@ cdef class World:
         self.__size = len(b)
 
         for i in range(256):
-            self.__lightOpacity[i] = blocks.lightOpacity[i]
-            self.__lightValue[i] = blocks.lightValue[i]
+            self.lightOpacity[i] = blocks.lightOpacity[i]
+            self.lightValue[i] = blocks.lightValue[i]
 
         for x in range(self.width):
             for z in range(self.length):
@@ -207,16 +212,17 @@ cdef class World:
         for i in range(len(b)):
             self.blocks[i] = b[i]
 
-        self.__data = <char*>malloc(sizeof(char) * len(data))
+        self.data = <char*>malloc(sizeof(char) * len(data))
         for i in range(len(data)):
-            self.__data[i] = data[i]
+            self.data[i] = data[i]
 
-        self.__heightMap = <int*>malloc(sizeof(int) * (w * d))
+        self.heightMap = <int*>malloc(sizeof(int) * (w * d))
         for i in range(w * d):
-            self.__heightMap[i] = h
+            self.heightMap[i] = h
 
+        self.__light = Light(self)
         self.__calculateLighting()
-        for worldAccess in self.__worldAccesses:
+        for worldAccess in self.worldAccesses:
             worldAccess.loadRenderers()
 
         self.__tickList.clear()
@@ -263,167 +269,36 @@ cdef class World:
                 break
 
     cdef __calculateLighting(self):
-        skyBrightness = <int>(15.0 * self.skyBrightness)
+        cdef int skyBrightness, x, z, y, i, br
+
+        skyBrightness = self.skylightSubtracted
         for x in range(self.width):
             for z in range(self.length):
                 y = self.height - 1
-                while y > 0 and self.__lightOpacity[self.getBlockId(x, y, z)] == 0:
+                while y > 0 and self.lightOpacity[self.getBlockId(x, y, z)] == 0:
                     y -= 1
 
-                self.__heightMap[x + y * self.width] = z + 1
+                self.heightMap[x + z * self.width] = y + 1
                 for y in range(self.height):
-                    br = self.__heightMap[x + z * self.width]
-                    br = skyBrightness if y >= br else 0
-                    blockId = self.blocks[(y * self.length + z) * self.width + x]
-                    br = max(self.__lightValue[blockId], br)
                     i = (y * self.length + z) * self.width + x
-                    self.__data[i] = <char>((self.__data[i] & 240) + br)
+                    br = self.heightMap[x + z * self.width]
+                    br = skyBrightness if y >= br else 0
+                    br = max(br, self.lightValue[<char>(self.blocks[i])])
+                    self.data[i] = <char>((self.data[i] & 240) + br)
 
-        for x in range(self.width):
-            for z in range(self.length):
-                self.updateBlockLight(x, 0, z, x + 1, self.height, z + 1)
-
-    cdef void __updateSkylight(self, int x0, int y0, int x1, int y1) except *:
-        cdef int x, z, oldDepth, y, yl0, yl1
-
-        for x in range(x0, x0 + x1):
-            for z in range(y0, y0 + y1):
-                oldDepth = self.__heightMap[x + z * self.width]
-                y = self.height - 1
-                while y > 0 and not self.__lightOpacity[self.getBlockId(x, y, z)]:
-                    y -= 1
-
-                self.__heightMap[x + z * self.width] = y + 1
-
-                if oldDepth != y:
-                    yl0 = oldDepth if oldDepth < y else y
-                    yl1 = oldDepth if oldDepth > y else y
-                    self.updateBlockLight(x, yl0, z, x + 1, yl1, z + 1)
-
-        self.updateBlockLight(0, 0, 0, 10, 10, 10)
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    cpdef void updateBlockLight(self, int x0, int y0, int z0, int x1, int y1, int z1):
-        cdef int i, x, y, z, count, br, counter, depth, opacity, newDepth
-        cdef int[:] lightCounter = np.zeros(1024, dtype=np.int32)
-        cdef list lightArrays = []
-        cdef char block
-        cdef RenderGlobal worldAccess
-
-        count = 0
-        for x in range(x0, x1):
-            for z in range(z0, z1):
-                for y in range(y0, y1):
-                    lightCounter[count] = x << 20 | y << 10 | z
-                    count += 1
-
-        br = <int>(15.0 * self.skyBrightness)
-
-        while count > 0 or len(lightArrays) > 0:
-            if count == 0:
-                lightCounter = lightArrays.pop()
-                count = lightCounter[len(lightCounter) - 1]
-
-            if count > len(lightCounter) - 32:
-                count -= 1
-                counter = lightCounter[count]
-                lightCounter[len(lightCounter) - 1] = count
-                lightArrays.append(lightCounter)
-                lightCounter = np.zeros(1024, dtype=np.int32)
-                count = 1
-                lightCounter[0] = counter
-                continue
-
-            count -= 1
-            counter = lightCounter[count]
-            x = counter >> 20 & 1023
-            y = counter >> 10 & 1023
-            z = counter & 1023
-            depth = self.__heightMap[x + z * self.width]
-            depth = br if y >= depth else 0
-            block = self.blocks[(y * self.length + z) * self.width + x]
-            opacity = self.__lightOpacity[block]
-            if opacity > 100:
-                depth = 0
-            elif depth < 14:
-                if opacity == 0:
-                    opacity = 1
-
-                newDepth = 0
-                if x > 0:
-                    newDepth = (self.__data[(y * self.length + z) * self.width + (x - 1)] & 15) - opacity
-                    if newDepth > depth:
-                        depth = newDepth
-                if x < self.width - 1:
-                    newDepth = (self.__data[(y * self.length + z) * self.width + x + 1] & 15) - opacity
-                    if newDepth > depth:
-                        depth = newDepth
-                if y > 0:
-                    newDepth = (self.__data[((y - 1) * self.length + z) * self.width + x] & 15) - opacity
-                    if newDepth > depth:
-                        depth = newDepth
-                if y < self.height - 1:
-                    newDepth = (self.__data[((y + 1) * self.length + z) * self.width + x] & 15) - opacity
-                    if newDepth > depth:
-                        depth = newDepth
-                if z > 0:
-                    newDepth = (self.__data[(y * self.length + (z - 1)) * self.width + x] & 15) - opacity
-                    if newDepth > depth:
-                        depth = newDepth
-                if z < self.length - 1:
-                    newDepth = (self.__data[(y * self.length + z + 1) * self.width + x] & 15) - opacity
-                    if newDepth > depth:
-                        depth = newDepth
-
-            depth = max(depth, self.__lightValue[block])
-
-            if x < x0:
-                x0 = x
-            elif x > x1:
-                x1 = x
-            if y > y1:
-                y1 = y
-            elif y < y0:
-                y0 = y
-            if z < z0:
-                z0 = z
-            elif z > z1:
-                z1 = z
-
-            i = (y * self.length + z) * self.width + x
-            if (self.__data[i] & 15) != depth:
-                self.__data[i] = <char>((self.__data[i] & 240) + depth)
-                if x > 0 and (self.__data[(y * self.length + z) * self.width + (x - 1)] & 15) != depth - 1:
-                    lightCounter[count] = x - 1 << 20 | y << 10 | z
-                    count += 1
-                if x < self.width - 1 and (self.__data[(y * self.length + z) * self.width + x + 1] & 15) != depth - 1:
-                    lightCounter[count] = x + 1 << 20 | y << 10 | z
-                    count += 1
-                if y > 0 and (self.__data[((y - 1) * self.length + z) * self.width + x] & 15) != depth - 1:
-                    lightCounter[count] = x << 20 | y - 1 << 10 | z
-                    count += 1
-                if y < self.height - 1 and (self.__data[((y + 1) * self.length + z) * self.width + x] & 15) != depth - 1:
-                    lightCounter[count] = x << 20 | y + 1 << 10 | z
-                    count += 1
-                if z > 0 and (self.__data[(y * self.length + (z - 1)) * self.width + x] & 15) != depth - 1:
-                    lightCounter[count] = x << 20 | y << 10 | z - 1
-                    count += 1
-                if z < self.length - 1 and (self.__data[(y * self.length + z + 1) * self.width + x] & 15) != depth - 1:
-                    lightCounter[count] = x << 20 | y << 10 | z + 1
-                    count += 1
-
-        for worldAccess in self.__worldAccesses:
-            worldAccess.markBlockRangeNeedsUpdate(x0, y0, z0, x1, y1, z1)
+        self.__light.updateBlockLight(0, 0, 0, self.width, self.height, self.length)
 
     def addWorldAccess(self, worldAccess):
-        self.__worldAccesses.add(worldAccess)
+        for entity in self.entityMap.all:
+            worldAccess.obtainEntitySkin(entity)
+
+        self.worldAccesses.append(worldAccess)
 
     def finalize(self):
         pass
 
     def removeWorldAccess(self, worldAccess):
-        self.__worldAccesses.remove(worldAccess)
+        self.worldAccesses.remove(worldAccess)
 
     def getCollidingBoundingBoxes(self, AxisAlignedBB box):
         cdef int minX, maxX, minY, maxY, minZ, maxZ, x, y, z
@@ -483,17 +358,17 @@ cdef class World:
             blockType = blocks.waterMoving.blockID
 
         self.blocks[(y * self.length + z) * self.width + x] = <char>blockType
+        self.setBlockMetadata(x, y, z, 0)
         if oldBlock != 0:
             blocks.blocksList[oldBlock].onBlockRemoval(self, x, y, z)
 
         if blockType != 0:
             blocks.blocksList[blockType].onBlockAdded(self, x, y, z)
 
-        self.setBlockMetadata(x, y, z, 0)
-        self.__updateSkylight(x, z, 1, 1)
-        self.updateBlockLight(x, y, z, x + 1, y + 1, z + 1)
+        self.__light.updateSkylight(x, z, 1, 1)
+        self.__light.updateBlockLight(x, y, z, x + 1, y + 1, z + 1)
 
-        for worldAccess in self.__worldAccesses:
+        for worldAccess in self.worldAccesses:
             worldAccess.markBlockAndNeighborsNeedsUpdate(x, y, z)
 
         return True
@@ -520,7 +395,7 @@ cdef class World:
             return False
 
         self.blocks[(y * self.length + z) * self.width + x] = <char>blockType
-        self.updateBlockLight(x, y, z, x + 1, y + 1, z + 1)
+        self.__light.updateBlockLight(x, y, z, x + 1, y + 1, z + 1)
         return True
 
     cdef __notifyBlockOfNeighborChange(self, int x, int y, int z, int blockType):
@@ -530,38 +405,6 @@ cdef class World:
         cdef Block block = blocks.blocksList[self.blocks[(y * self.length + z) * self.width + x]]
         if block:
             block.onNeighborBlockChange(self, x, y, z, blockType)
-
-    cpdef inline bint isHalfLit(self, int x, int y, int z):
-        if x < 0:
-            x = 0
-        elif x >= self.width:
-            x = self.width - 1
-        if y < 0:
-            y = 0
-        elif y >= self.height:
-            y = self.height - 1
-        if z < 0:
-            z = 0
-        elif z >= self.length:
-            z = self.length - 1
-
-        return self.__getBlockLightValue(x, y, z) > 3
-
-    cpdef inline bint isFullyLit(self, int x, int y, int z):
-        if x < 0:
-            x = 0
-        elif x >= self.width:
-            x = self.width - 1
-        if y < 0:
-            y = 0
-        elif y >= self.height:
-            y = self.height - 1
-        if z < 0:
-            z = 0
-        elif z >= self.length:
-            z = self.length - 1
-
-        return self.__getBlockLightValue(x, y, z) < 14
 
     cpdef inline int getBlockId(self, int x, int y, int z):
         if x < 0:
@@ -580,18 +423,96 @@ cdef class World:
         return self.blocks[(y * self.length + z) * self.width + x] & 255
 
     cpdef inline bint isBlockNormalCube(self, int x, int y, int z):
-        return self.__isBlockNormal[self.getBlockId(x, y, z)]
+        cdef Block block = blocks.blocksList[self.getBlockId(x, y, z)]
+        return block.isOpaqueCube() if block else False
 
     def updateEntities(self):
         self.entityMap.updateEntities()
+
+    def updateLighting(self):
+        self.__light.updateLight()
+
+    cdef float getStarBrightness(self, float alpha):
+        cdef float theta = self.getCelestialAngle(alpha)
+        theta = 1.0 - (cos(theta * pi * 2.0) * 2.0 + 12.0 / 16.0)
+        theta = min(max(theta, 0.0), 1.0)
+        return theta * theta * 0.5
+
+    def getSkyColor(self, float alpha):
+        cdef float theta, x, y, z
+
+        theta = self.getCelestialAngle(alpha)
+        theta = cos(theta * pi * 2.0) * 2.0 + 0.5
+        theta = min(max(theta, 0.0), 1.0)
+
+        x = (self.skyColor >> 16 & 255) / 255.0
+        y = (self.skyColor >> 8 & 255) / 255.0
+        z = (self.skyColor & 255) / 255.0
+        x *= theta
+        y *= theta
+        z *= theta
+        return Vec3D(x, y, z)
+
+    cdef float getCelestialAngle(self, float alpha):
+        return (self.worldTime + alpha) / self.__timeCycle - 0.2
+
+    def getFogColor(self, float alpha):
+        cdef float theta, x, y, z
+
+        theta = self.getCelestialAngle(alpha)
+        theta = cos(theta * pi * 2.0) * 2.0 + 0.5
+        theta = min(max(theta, 0.0), 1.0)
+        theta *= self.skyBrightness / 15
+
+        x = (self.fogColor >> 16 & 255) / 255.0
+        y = (self.fogColor >> 8 & 255) / 255.0
+        z = (self.fogColor & 255) / 255.0
+        x *= theta * 0.94 + 0.06
+        y *= theta * 0.94 + 0.06
+        z *= theta * 0.91 + 0.09
+        return Vec3D(x, y, z)
+
+    def getCloudColor(self, float alpha):
+        cdef float theta, x, y, z
+
+        theta = self.getCelestialAngle(alpha)
+        theta = cos(theta * pi * 2.0) * 2.0 + 0.5
+        theta = min(max(theta, 0.0), 1.0)
+        theta *= self.skyBrightness / 15
+
+        x = (self.cloudColor >> 16 & 255) / 255.0
+        y = (self.cloudColor >> 8 & 255) / 255.0
+        z = (self.cloudColor & 255) / 255.0
+        x *= theta * 0.9 + 0.1
+        y *= theta * 0.9 + 0.1
+        z *= theta * 0.85 + 0.15
+        return Vec3D(x, y, z)
+
+    def getSkyBrightness(self):
+        cdef int br
+        cdef float theta = self.getCelestialAngle(1.0)
+        theta = cos(theta * pi * 2.0) * 2.0 + 0.5
+        theta = min(max(theta, 0.0), 1.0)
+        br = <int>(theta * ((15 * self.skyBrightness) / 15.0 - 4.0) + 4.0)
+        return max(min(br, 15), 4)
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def tick(self):
-        cdef int wShift, lShift, h, w, d, ticks, i, randValue, x, y, z, blockId
+        cdef int br, wShift, lShift, h, w, d, ticks, i, randValue, x, y, z, blockId
         cdef char b
         cdef NextTickListEntry posType
+
+        self.worldTime += 1
+        if self.worldTime == self.__timeCycle:
+            self.worldTime = 0
+
+        br = self.getSkyBrightness();
+        if self.skylightSubtracted > br:
+            self.__updateChunkLight(self.skylightSubtracted - 1)
+        if self.skylightSubtracted < br:
+            self.__updateChunkLight(self.skylightSubtracted + 1)
 
         self.__playTime += 1
 
@@ -800,9 +721,9 @@ cdef class World:
         elif z >= self.length:
             z = self.length - 1
 
-        return self.__lightBrightnessTable[self.__data[(y * self.length + z) * self.width + x] & 15]
+        return self.__lightBrightnessTable[self.data[(y * self.length + z) * self.width + x] & 15]
 
-    cdef inline char __getBlockLightValue(self, int x, int y, int z):
+    cpdef inline char getBlockLightValue(self, int x, int y, int z):
         if x < 0:
             x = 0
         elif x >= self.width:
@@ -816,7 +737,7 @@ cdef class World:
         elif z >= self.length:
             z = self.length - 1
 
-        return <char>(self.__data[(y * self.length + z) * self.width + x] & 15)
+        return <char>(self.data[(y * self.length + z) * self.width + x] & 15)
 
     cpdef inline char getBlockMetadata(self, int x, int y, int z):
         if x < 0:
@@ -832,7 +753,7 @@ cdef class World:
         elif z >= self.length:
             z = self.length - 1
 
-        return <char>((self.__data[(y * self.length + z) * self.width + x] % 0x100000000) >> 4 & 15)
+        return <char>((self.data[(y * self.length + z) * self.width + x] % 0x100000000) >> 4 & 15)
 
     cpdef setBlockMetadata(self, int x, int y, int z, int metadata):
         cdef int dataIdx
@@ -852,9 +773,9 @@ cdef class World:
             z = self.length - 1
 
         dataIdx = (y * self.length + z) * self.width + x
-        self.__data[dataIdx] = <char>((self.__data[dataIdx] & 15) + (metadata << 4))
+        self.data[dataIdx] = <char>((self.data[dataIdx] & 15) + (metadata << 4))
 
-        for worldAccess in self.__worldAccesses:
+        for worldAccess in self.worldAccesses:
             worldAccess.markBlockAndNeighborsNeedsUpdate(x, y, z)
 
     def getBlockMaterial(self, int x, int y, int z):
@@ -1050,11 +971,19 @@ cdef class World:
         return self.playerEntity
 
     def spawnEntityInWorld(self, entity):
+        cdef RenderGlobal worldAccess
+
         self.entityMap.insert(entity)
         entity.setWorld(self)
+        for worldAccess in self.worldAccesses:
+            worldAccess.obtainEntitySkin(entity)
 
     def releaseEntitySkin(self, entity):
+        cdef RenderGlobal worldAccess
+
         self.entityMap.remove(entity)
+        for worldAccess in self.worldAccesses:
+            worldAccess.releaseEntitySkin(entity)
 
     @cython.cdivision(True)
     def createExplosion(self, entity, float x, float y, float z, float radius):
@@ -1212,7 +1141,7 @@ cdef class World:
                 return entity
 
     def getMapHeight(self, int x, int z):
-        return self.__heightMap[x + z * self.width]
+        return self.heightMap[x + z * self.width]
 
     cdef int fluidFlowCheck(self, int x, int y, int z, int source, int tt):
         cdef int orgX, orgZ, pos, flooded, sourceBlock, floodedBlocks, lastDistance, i, \
@@ -1436,7 +1365,7 @@ cdef class World:
     def playSoundAtEntity(self, entity, str name, float volume, float pitch):
         cdef float d, xd, yd, zd
         cdef RenderGlobal worldAccess
-        for worldAccess in self.__worldAccesses:
+        for worldAccess in self.worldAccesses:
             d = 16.0
             if volume > 1.0:
                 d = 16.0 * volume
@@ -1449,14 +1378,14 @@ cdef class World:
 
     def playMusic(self, float x, float y, float z, str name, float _):
         cdef RenderGlobal worldAccess
-        for worldAccess in self.__worldAccesses:
-            worldAccess.playStreaming(name, x, y, z, 0.0)
+        for worldAccess in self.worldAccesses:
+            worldAccess.playMusic(name, x, y, z, 0.0)
 
     def playSoundAtPlayer(self, float x, float y, float z, str name,
                           float volume, float pitch):
         cdef float d, xd, yd, zd
         cdef RenderGlobal worldAccess
-        for worldAccess in self.__worldAccesses:
+        for worldAccess in self.worldAccesses:
             d = 16.0
             if volume > 1.0:
                 d = 16.0 * volume
@@ -1501,7 +1430,7 @@ cdef class World:
     def spawnParticle(self, str particle, float x, float y, float z,
                       float xr, float yr, float zr):
         cdef RenderGlobal worldAccess
-        for worldAccess in self.__worldAccesses:
+        for worldAccess in self.worldAccesses:
             worldAccess.spawnParticle(particle, x, y, z, xr, yr, zr)
 
     def randomDisplayUpdates(self, int xo, int yo, int zo):
@@ -1526,9 +1455,33 @@ cdef class World:
         cdef int i
         data = bytearray(self.__size)
         for i in range(self.__size):
-            data[i] = self.__data[i]
+            data[i] = self.data[i]
 
         return data
 
     def debugSkylightUpdates(self):
-        return str(len(self.__tickList))
+        return str(len(self.__tickList)) + '. L: ' + \
+               str(self.__light.debugSkylightUpdates())
+
+    def setLevel(self):
+        cdef int i
+        cdef RenderGlobal worldAccess
+        for i in range(len(self.worldAccesses)):
+            worldAccess = self.worldAccesses[i]
+            for entity in self.entityMap.all:
+                worldAccess.releaseEntitySkin(self.entityMap.all[i])
+
+    cdef __updateChunkLight(self, int lightSubtracted):
+        self.__light.updateDaylightCycle(lightSubtracted)
+
+    def canBlockSeeTheSky(self, int x, int y, int z):
+        if self.heightMap[x + z * self.width] <= y:
+            return True
+
+        while y < self.height:
+            if blocks.opaqueCubeLookup[self.getBlockId(x, y, z)]:
+                return False
+
+            y += 1
+
+        return True

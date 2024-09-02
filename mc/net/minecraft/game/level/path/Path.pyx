@@ -1,12 +1,14 @@
-from mc.net.minecraft.game.level.path.PathPoint import PathPoint
+# cython: language_level=3
 
-class Path:
+from mc.net.minecraft.game.level.path.PathPoint cimport PathPoint
+
+cdef class Path:
 
     def __init__(self):
         self.__pathPoints = [None] * 1024
         self.__count = 0
 
-    def addPoint(self, point):
+    cdef PathPoint addPoint(self, PathPoint point):
         if point.index >= 0:
             raise Exception('OW KNOWS!')
         elif self.__count == len(self.__pathPoints):
@@ -20,11 +22,11 @@ class Path:
         self.__count += 1
         return point
 
-    def clearPath(self):
+    cdef clearPath(self):
         self.__count = 0
 
-    def dequeue(self):
-        point = self.__pathPoints[0]
+    cdef PathPoint dequeue(self):
+        cdef PathPoint point = self.__pathPoints[0]
         self.__count -= 1
         self.__pathPoints[0] = self.__pathPoints[self.__count]
         self.__pathPoints[self.__count] = None
@@ -34,15 +36,18 @@ class Path:
         point.index = -1
         return point
 
-    def changeDistance(self, point, distance):
-        prevDistance = point.distanceToTarget
+    cdef changeDistance(self, PathPoint point, float distance):
+        cdef float prevDistance = point.distanceToTarget
         point.distanceToTarget = distance
         if distance < prevDistance:
             self.__sortBack(point.index)
         else:
             self.__sortForward(point.index)
 
-    def __sortBack(self, index):
+    cdef __sortBack(self, int index):
+        cdef PathPoint point
+        cdef int idx
+
         point = self.__pathPoints[index]
         while index > 0:
             idx = index - 1 >> 1
@@ -56,7 +61,11 @@ class Path:
         self.__pathPoints[index] = point
         point.index = index
 
-    def __sortForward(self, index):
+    cdef __sortForward(self, int index):
+        cdef PathPoint point, pnt, nextPoint
+        cdef float distance
+        cdef int idx, nextIdx
+
         point = self.__pathPoints[index]
         while True:
             idx = 1 + (index << 1)
@@ -89,5 +98,5 @@ class Path:
         self.__pathPoints[index] = point
         point.index = index
 
-    def isPathEmpty(self):
+    cdef bint isPathEmpty(self):
         return self.__count == 0

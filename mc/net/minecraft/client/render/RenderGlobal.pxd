@@ -28,6 +28,8 @@ cdef class RenderGlobal:
 
         int __cloudOffsetX
 
+        int __glSkyList
+
         int __countEntitiesTotal
         int __countEntitiesRendered
         int __countEntitiesHidden
@@ -56,7 +58,10 @@ cdef class RenderGlobal:
 
     cdef __checkOcclusionQueryResult(self, int minChunk, int maxChunk)
     cdef int __renderSortedRenderers(self, int minChunk, int maxChunk, int layer)
+    cdef __oobGroundRenderHeight(self)
+    cdef __oobWaterRenderHeight(self)
     cdef __markBlocksForUpdate(self, int x0, int y0, int z0, int x1, int y1, int z1)
     cdef markBlockAndNeighborsNeedsUpdate(self, int x, int y, int z)
     cdef markBlockRangeNeedsUpdate(self, int x0, int y0, int z0,
                                    int x1, int y1, int z1)
+    cdef updateAllRenderers(self)

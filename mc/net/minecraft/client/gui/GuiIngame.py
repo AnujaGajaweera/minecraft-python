@@ -28,7 +28,10 @@ class GuiIngame(Gui):
         self.drawTexturedModalRect(scaledWidth / 2 - 91 - 1 + self.__mc.thePlayer.inventory.currentItem * 20,
                                    scaledHeight - 22 - 1, 0, 22, 24, 22)
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.__mc.renderEngine.getTexture('gui/icons.png'))
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_ONE_MINUS_DST_COLOR, gl.GL_ONE_MINUS_SRC_COLOR)
         self.drawTexturedModalRect(scaledWidth / 2 - 7, scaledHeight / 2 - 7, 0, 0, 16, 16)
+        gl.glDisable(gl.GL_BLEND)
         invulnerable = self.__mc.thePlayer.heartsLife / 3 % 2 == 1
         if self.__mc.thePlayer.heartsLife < 10:
             invulnerable = False

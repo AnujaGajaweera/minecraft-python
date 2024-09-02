@@ -30,6 +30,7 @@ cdef class RenderBlocks:
         cdef int renderType
         cdef bint layerOk
         cdef float b, minY, maxY
+        cdef char metadata
 
         layerOk = False
         renderType = block.getRenderType()
@@ -147,18 +148,19 @@ cdef class RenderBlocks:
             )
             return True
         elif renderType == 2:
+            metadata = self.__blockAccess.getBlockMetadata(x, y, z)
             b = block.getBlockBrightness(self.__blockAccess, x, y, z)
             if blocks.lightValue[block.blockID] > 0:
                 b = 1.0
 
             self.__tessellator.setColorOpaque_F(b, b, b)
-            if self.__blockAccess.isBlockNormalCube(x - 1, y, z):
+            if metadata == 1:
                 self.__renderBlockTorch(block, x - 10.0 * 0.01, y + 0.2, z, -0.4, 0.0)
-            elif self.__blockAccess.isBlockNormalCube(x + 1, y, z):
+            elif metadata == 2:
                 self.__renderBlockTorch(block, x + 10.0 * 0.01, y + 0.2, z, 0.4, 0.0)
-            elif self.__blockAccess.isBlockNormalCube(x, y, z - 1):
+            elif metadata == 3:
                 self.__renderBlockTorch(block, x, y + 0.2, z - 10.0 * 0.01, 0.0, -0.4)
-            elif self.__blockAccess.isBlockNormalCube(x, y, z + 1):
+            elif metadata == 4:
                 self.__renderBlockTorch(block, x, y + 0.2, z + 10.0 * 0.01, 0.0, 0.4)
             else:
                 self.__renderBlockTorch(block, x, y, z, 0.0, 0.0)

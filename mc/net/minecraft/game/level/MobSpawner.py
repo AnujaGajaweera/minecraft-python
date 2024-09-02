@@ -1,5 +1,5 @@
-from mc.net.minecraft.game.level.material.Material import Material
 from mc.net.minecraft.game.entity.EntityLiving import EntityLiving
+from mc.net.minecraft.game.entity.animal.EntityAnimal import EntityAnimal
 from mc.net.minecraft.game.entity.animal.EntityPig import EntityPig
 from mc.net.minecraft.game.entity.animal.EntitySheep import EntitySheep
 from mc.net.minecraft.game.entity.monster.EntityCreeper import EntityCreeper
@@ -14,87 +14,132 @@ class MobSpawner:
     def __init__(self, world):
         self.__worldObj = world
 
-    def spawnMobs(self):
-        size = self.__worldObj.width * self.__worldObj.length * \
+    def performSpawning(self):
+        mobSize = self.__worldObj.width * self.__worldObj.length * \
                self.__worldObj.height * 20 // 64 // 64 // 64
-        size // 4
+        mobSize //= 2
         if self.__worldObj.difficultySetting == 0:
-            size //= 4
+            mobSize = 0 // 4
         elif self.__worldObj.difficultySetting == 1:
-            size = size * 3 // 4
+            mobSize = mobSize * 3 // 4
         elif self.__worldObj.difficultySetting == 2:
-            size = (size << 2) // 4
+            mobSize = (mobSize << 2) // 4
         elif self.__worldObj.difficultySetting == 3:
-            size = size * 5 // 4
+            mobSize = mobSize * 6 // 4
 
-        if self.__worldObj.rand.nextInt(100) < size and \
-           self.__worldObj.entitiesInLevelList(EntityLiving) < size:
-            self.spawnMob(size, self.__worldObj.playerEntity, None)
+        animalSize = self.__worldObj.width * self.__worldObj.length // 4000
+        totalMobs = self.__worldObj.entitiesInLevelList(EntityMob)
+        for i in range(4):
+            if totalMobs >= mobSize:
+                break
 
-    def spawnMob(self, count, entity, loader):
-        mobs = 0
-        for i in range(count):
-            choice = self.__worldObj.rand.nextInt(7)
+            mobs = 0
+            choice = self.__worldObj.rand.nextInt(5)
             blockX = self.__worldObj.rand.nextInt(self.__worldObj.width)
             blockY = int(min(self.__worldObj.rand.nextFloat(),
                              self.__worldObj.rand.nextFloat()) * self.__worldObj.height)
             blockZ = self.__worldObj.rand.nextInt(self.__worldObj.length)
-            if not self.__worldObj.isBlockNormalCube(blockX, blockY, blockZ) and \
-               self.__worldObj.getBlockMaterial(blockX, blockY, blockZ) == Material.air and \
-               (not self.__worldObj.isHalfLit(blockX, blockY, blockZ) or \
-                self.__worldObj.rand.nextInt(5) == 0):
-                for j in range(4):
-                    xx = blockX
-                    yy = blockY
-                    zz = blockZ
-                    for k in range(3):
-                        xx += self.__worldObj.rand.nextInt(6) - self.__worldObj.rand.nextInt(6)
-                        yy += self.__worldObj.rand.nextInt(1) - self.__worldObj.rand.nextInt(1)
-                        zz += self.__worldObj.rand.nextInt(6) - self.__worldObj.rand.nextInt(6)
-                        if xx >= 0 and zz >= 0 and yy >= 0 and \
-                           yy < self.__worldObj.height - 2 and xx < self.__worldObj.width and zz < self.__worldObj.length and \
-                           self.__worldObj.isBlockNormalCube(xx, yy - 1, zz) and not \
-                           self.__worldObj.isBlockNormalCube(xx, yy, zz) and not \
-                           self.__worldObj.isBlockNormalCube(xx, yy + 1, zz):
-                            x = xx + 0.5
-                            y = yy + 1.0
-                            z = zz + 0.5
-                            if entity:
-                                xd = x - entity.posX
-                                yd = y - entity.posY
-                                zd = z - entity.posZ
-                            else:
-                                xd = x - self.__worldObj.xSpawn
-                                yd = y - self.__worldObj.ySpawn
-                                zd = z - self.__worldObj.zSpawn
+            for j in range(2):
+                xx = blockX
+                yy = blockY
+                zz = blockZ
+                for k in range(3):
+                    xx += self.__worldObj.rand.nextInt(6) - self.__worldObj.rand.nextInt(6)
+                    yy += self.__worldObj.rand.nextInt(1) - self.__worldObj.rand.nextInt(1)
+                    zz += self.__worldObj.rand.nextInt(6) - self.__worldObj.rand.nextInt(6)
+                    if xx >= 0 and zz > 0 and yy >= 0 and \
+                       yy < self.__worldObj.height - 2 and \
+                       xx < self.__worldObj.width and zz < self.__worldObj.length:
+                        x = xx + 0.5
+                        y = yy + 0.5
+                        z = zz + 0.5
+                        if self.__worldObj.playerEntity:
+                            xd = x - self.__worldObj.playerEntity.posX
+                            yd = y - self.__worldObj.playerEntity.posY
+                            zd = z - self.__worldObj.playerEntity.posZ
+                        else:
+                            xd = x - self.__worldObj.xSpawn
+                            yd = y - self.__worldObj.ySpawn
+                            zd = z - self.__worldObj.zSpawn
 
-                            if xd * xd + yd * yd + zd * zd < 256.0:
-                                continue
+                        if xd * xd + yd * yd + zd * zd < 1024.0:
+                            continue
 
+                        mob = None
+                        if choice == 0:
+                            mob = EntitySkeleton(self.__worldObj)
+                        elif choice == 1:
+                            mob = EntityCreeper(self.__worldObj)
+                        elif choice == 2:
+                            mob = EntitySpider(self.__worldObj)
+                        elif choice == 3:
+                            mob = EntityZombie(self.__worldObj)
+
+                        if isinstance(mob, EntityMob) and self.__worldObj.difficultySetting == 0:
                             mob = None
-                            if choice == 0:
-                                mob = EntitySkeleton(self.__worldObj)
-                            elif choice == 1:
-                                mob = EntityPig(self.__worldObj)
-                            elif choice == 2:
-                                mob = EntityCreeper(self.__worldObj)
-                            elif choice == 3:
-                                mob = EntitySpider(self.__worldObj)
-                            elif choice == 4:
-                                mob = EntitySheep(self.__worldObj)
-                            elif choice == 6:
-                                mob = EntityZombie(self.__worldObj)
 
-                            if isinstance(mob, EntityMob) and self.__worldObj.difficultySetting == 0:
-                                mob = None
+                        if not mob or self.__worldObj.isBlockNormalCube(xx, yy, zz) or \
+                           not self.__worldObj.isBlockNormalCube(xx, yy - 1, zz) or \
+                           not mob.getCanSpawnHere(x, y, z):
+                            continue
 
-                            if not mob or not mob.getCanSpawnHere(x, y, z):
-                                continue
+                        yaw = self.__worldObj.rand.nextFloat() * 360.0
+                        mob.setPositionAndRotation(x, y, z, yaw, 0.0)
+                        mobs += 1
+                        self.__worldObj.spawnEntityInWorld(mob)
 
-                            yaw = self.__worldObj.rand.nextFloat() * 360.0
-                            mob.setPositionAndRotation(x, y, z, yaw, 0.0)
-                            if self.__worldObj.checkIfAABBIsClearSpawn(mob.boundingBox):
-                                mobs += 1
-                                self.__worldObj.spawnEntityInWorld(mob)
+            totalMobs += mobs
 
-        return mobs
+        totalAnimals = self.__worldObj.entitiesInLevelList(EntityAnimal)
+        for i in range(4):
+            if totalAnimals >= animalSize:
+                break
+
+            animals = 0
+            choice = self.__worldObj.rand.nextInt(2)
+            blockX = self.__worldObj.rand.nextInt(self.__worldObj.width)
+            blockY = self.__worldObj.rand.nextInt(self.__worldObj.height)
+            blockZ = self.__worldObj.rand.nextInt(self.__worldObj.length)
+            for j in range(4):
+                xx = blockX
+                yy = blockY
+                zz = blockZ
+                for k in range(3):
+                    xx += self.__worldObj.rand.nextInt(6) - self.__worldObj.rand.nextInt(6)
+                    yy += self.__worldObj.rand.nextInt(1) - self.__worldObj.rand.nextInt(1)
+                    zz += self.__worldObj.rand.nextInt(6) - self.__worldObj.rand.nextInt(6)
+                    if xx >= 0 and zz > 0 and yy >= 0 and \
+                       yy < self.__worldObj.height - 2 and \
+                       xx < self.__worldObj.width and zz < self.__worldObj.length:
+                        x = xx + 0.5
+                        y = yy + 0.5
+                        z = zz + 0.5
+                        if self.__worldObj.playerEntity:
+                            xd = x - self.__worldObj.playerEntity.posX
+                            yd = y - self.__worldObj.playerEntity.posY
+                            zd = z - self.__worldObj.playerEntity.posZ
+                        else:
+                            xd = x - self.__worldObj.xSpawn
+                            yd = y - self.__worldObj.ySpawn
+                            zd = z - self.__worldObj.zSpawn
+
+                        if xd * xd + yd * yd + zd * zd < 1024.0:
+                            continue
+
+                        animal = None
+                        if choice == 0:
+                            animal = EntityPig(self.__worldObj)
+                        elif choice == 1:
+                            animal = EntitySheep(self.__worldObj)
+
+                        if not animal or self.__worldObj.isBlockNormalCube(xx, yy, zz) or \
+                           not self.__worldObj.isBlockNormalCube(xx, yy - 1, zz) or \
+                           not animal.getCanSpawnHere(x, y, z):
+                            continue
+
+                        yaw = self.__worldObj.rand.nextFloat() * 360.0
+                        animal.setPositionAndRotation(x, y, z, yaw, 0.0)
+                        animals += 1
+                        self.__worldObj.spawnEntityInWorld(animal)
+
+            totalAnimals += animals

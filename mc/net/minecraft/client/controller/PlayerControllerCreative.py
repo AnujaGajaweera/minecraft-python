@@ -19,11 +19,7 @@ class PlayerControllerCreative(PlayerController):
     def onWorldChange(self, world):
         super().onWorldChange(world)
         world.survivalWorld = False
-
         self.__mobSpawner = MobSpawner(world)
-        size = world.width * world.length * world.height // 64 // 64 // 64
-        for i in range(size):
-            self.__mobSpawner.spawnMob(size, world.playerEntity, None)
 
     def onUpdate(self):
-        self.__mobSpawner.spawnMobs()
+        self.__mobSpawner.performSpawning()

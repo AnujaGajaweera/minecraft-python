@@ -59,7 +59,6 @@ from mc.net.minecraft.client.render.WorldRenderer import WorldRenderer
 from mc.net.minecraft.client.controller.PlayerControllerCreative import PlayerControllerCreative
 from mc.net.minecraft.client.controller.PlayerControllerSP import PlayerControllerSP
 from mc.net.minecraft.client.sound.SoundManager import SoundManager
-from mc.net.minecraft.client.ThreadDownloadSkin import ThreadDownloadSkin
 from mc.net.minecraft.client.Session import Session
 from mc.JavaUtils import BufferUtils, getMillis
 from pyglet import window, app, canvas, clock
@@ -261,7 +260,7 @@ class Minecraft(window.Window):
                     self.thePlayer.dropPlayerItemWithRandomChoice(
                         self.thePlayer.inventory.decrStackSize(
                             self.thePlayer.inventory.currentItem, 1
-                        )
+                        ), False
                     )
 
                 if isinstance(self.playerController, PlayerControllerCreative):
@@ -311,6 +310,9 @@ class Minecraft(window.Window):
 
     def on_draw(self):
         try:
+            if self.theWorld:
+                self.theWorld.updateLighting()
+
             if self.isGamePaused:
                 prevTicks = self.__timer.renderPartialTicks
                 self.__timer.updateTimer()
@@ -332,7 +334,7 @@ class Minecraft(window.Window):
 
             self.isGamePaused = self.currentScreen is not None and \
                                 self.currentScreen.doesGuiPauseGame()
-        except OSError as e:
+        except Exception as e:
             print(traceback.format_exc())
             self.displayGuiScreen(GuiErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
 
@@ -433,9 +435,7 @@ class Minecraft(window.Window):
             self.displayGuiScreen(GuiMainMenu())
 
         self.effectRenderer = EffectRenderer(self.theWorld, self.renderEngine)
-
         self.ingameGUI = GuiIngame(self)
-        ThreadDownloadSkin(self).start()
 
         lastTime = getMillis()
         frames = 0
@@ -582,7 +582,8 @@ class Minecraft(window.Window):
             self.playerController.onUpdate()
 
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.renderEngine.getTexture('terrain.png'))
-        self.renderEngine.updateDynamicTextures()
+        if not self.isGamePaused:
+            self.renderEngine.updateDynamicTextures()
 
         if not self.currentScreen and self.thePlayer and self.thePlayer.health <= 0:
             self.displayGuiScreen(None)
@@ -633,6 +634,8 @@ class Minecraft(window.Window):
             self.effectRenderer.updateEffects()
 
     def generateLevel(self, size, shape, levelType, theme):
+        self.setLevel(None)
+        gc.collect()
         name = self.session.username if self.session else 'anonymous'
         levelGen = LevelGenerator(self.loadingScreen)
         levelGen.islandGen = levelType == 1
@@ -653,6 +656,9 @@ class Minecraft(window.Window):
         self.setLevel(levelGen.generate(name, width, height, length))
 
     def setLevel(self, world):
+        if self.theWorld:
+            self.theWorld.setLevel()
+
         self.theWorld = world
         if world:
             world.load()
@@ -660,31 +666,31 @@ class Minecraft(window.Window):
             self.thePlayer = world.findSubclassOf(EntityPlayerSP)
             world.playerEntity = self.thePlayer
 
-        if not self.thePlayer:
-            self.thePlayer = EntityPlayerSP(self, world)
-            self.thePlayer.preparePlayerToSpawn()
-            self.playerController.flipPlayer(self.thePlayer)
-            if world:
-                world.spawnEntityInWorld(self.thePlayer)
-                world.playerEntity = self.thePlayer
+            if not self.thePlayer:
+                self.thePlayer = EntityPlayerSP(self, world, self.session)
+                self.thePlayer.preparePlayerToSpawn()
+                self.playerController.flipPlayer(self.thePlayer)
+                if world:
+                    world.spawnEntityInWorld(self.thePlayer)
+                    world.playerEntity = self.thePlayer
 
-        if self.thePlayer:
-            self.thePlayer.movementInput = MovementInputFromOptions(self.options)
-            self.playerController.onRespawn(self.thePlayer)
+            if self.thePlayer:
+                self.thePlayer.movementInput = MovementInputFromOptions(self.options)
+                self.playerController.onRespawn(self.thePlayer)
 
-        if self.renderGlobal:
-            self.renderGlobal.changeWorld(world)
+            if self.renderGlobal:
+                self.renderGlobal.changeWorld(world)
 
-        if self.effectRenderer:
-            self.effectRenderer.clearEffects(world)
+            if self.effectRenderer:
+                self.effectRenderer.clearEffects(world)
 
-        self.__textureWaterFX.textureId = 0
-        self.__textureLavaFX.textureId = 0
-        tex = self.renderEngine.getTexture('water.png')
-        if world.defaultFluid == blocks.waterMoving.blockID:
-            self.__textureWaterFX.textureId = tex
-        else:
-            self.__textureLavaFX.textureId = tex
+            self.__textureWaterFX.textureId = 0
+            self.__textureLavaFX.textureId = 0
+            tex = self.renderEngine.getTexture('water.png')
+            if world.defaultFluid == blocks.waterMoving.blockID:
+                self.__textureWaterFX.textureId = tex
+            else:
+                self.__textureLavaFX.textureId = tex
 
         gc.collect()
 

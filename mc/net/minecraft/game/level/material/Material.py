@@ -33,7 +33,7 @@ class Material(Enum):
     def getIsLiquid(self):
         return self.__isLiquid
 
-    def isTransparent(self):
+    def liquidSolidCheck(self):
         return not self.getIsLiquid() and not self.isSolid()
 
     def isSolid(self):

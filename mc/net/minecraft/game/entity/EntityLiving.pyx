@@ -24,9 +24,10 @@ cdef class EntityLiving(Entity):
         self.prevRenderYawOffset = 0.0
         self.__prevRotationYawHead = 0.0
         self.__rotationYawHead = 0.0
-        self.texture = 'char.png'
+        self._texture = 'char.png'
         self.health = 10
         self.prevHealth = 0
+        self.__livingSoundTime = 0
         self.hurtTime = 0
         self.maxHurtTime = 0
         self.attackedAtYaw = 0.0
@@ -40,10 +41,13 @@ cdef class EntityLiving(Entity):
         self._moveStrafing = 0.0
         self._moveForward = 0.0
         self.randomYawVelocity = 0.0
-        self.__entityAge = 0
+        self._entityAge = 0
         self._isJumping = False
         self.__defaultPitch = 0.0
         self._moveSpeed = 0.7
+
+    def getTexture(self):
+        return self._texture
 
     def canBeCollidedWith(self):
         return not self.isDead
@@ -61,6 +65,17 @@ cdef class EntityLiving(Entity):
         cdef bint angle
 
         Entity.onEntityUpdate(self)
+
+        if self._rand.nextInt(1000) < self.__livingSoundTime:
+            self.__livingSoundTime = -80
+            sound = self._getLivingSound()
+            if sound:
+                self._worldObj.playSoundAtEntity(
+                    self, sound, 1.0,
+                    (self._rand.nextFloat() - self._rand.nextFloat()) * 0.2 + 1.0
+                )
+        else:
+            self.__livingSoundTime += 1
 
         if self.isInsideOfMaterial():
             self.air -= 1
@@ -166,7 +181,7 @@ cdef class EntityLiving(Entity):
         if not self._worldObj.survivalWorld:
             return
 
-        self.__entityAge = 0
+        self._entityAge = 0
         if self.health <= 0:
             return False
 
@@ -182,10 +197,6 @@ cdef class EntityLiving(Entity):
             self.health -= damage
             self.hurtTime = self.maxHurtTime = 10
 
-        self._worldObj.playSoundAtEntity(
-            self, 'random.hurt', 1.0,
-            (self._rand.nextFloat() - self._rand.nextFloat()) * 0.2 + 1.0
-        )
         self.attackedAtYaw = 0.0
         if entity:
             xd = entity.posX - self.posX
@@ -204,9 +215,27 @@ cdef class EntityLiving(Entity):
             self.attackedAtYaw = <int>(random() * 2.0) * 180
 
         if self.health <= 0:
+            self._worldObj.playSoundAtEntity(
+                self, self._getDeathSound(), 1.0,
+                (self._rand.nextFloat() - self._rand.nextFloat()) * 0.2 + 1.0
+            )
             self.onDeath(entity)
+        else:
+            self._worldObj.playSoundAtEntity(
+                self, self._getHurtSound(), 1.0,
+                (self._rand.nextFloat() - self._rand.nextFloat()) * 0.2 + 1.0
+            )
 
         return True
+
+    def _getLivingSound(self):
+        return None
+
+    def _getHurtSound(self):
+        return 'random.hurt'
+
+    def _getDeathSound(self):
+        return 'random.hurt'
 
     def onDeath(self, Entity entity):
         cdef int i
@@ -233,7 +262,7 @@ cdef class EntityLiving(Entity):
                                               <int>self.posZ)
             if block > 0:
                 sound = blocks.blocksList[block].stepSound
-                self._worldObj.playSoundAtEntity(self, 'step.' + sound.sound,
+                self._worldObj.playSoundAtEntity(self, sound.stepSoundDirStep(),
                                                sound.soundVolume * 0.5,
                                                sound.soundPitch * (12.0 / 16.0))
 
@@ -303,15 +332,15 @@ cdef class EntityLiving(Entity):
         cdef bint isInWater, isInLava
         cdef float xd, yd, zd
 
-        self.__entityAge += 1
-        if self.__entityAge > 600 and self._rand.nextInt(800) == 0:
+        self._entityAge += 1
+        if self._entityAge > 600 and self._rand.nextInt(800) == 0:
             entity = self._worldObj.getPlayerEntity()
             if entity:
                 xd = entity.posX - self.posX
                 yd = entity.posY - self.posY
                 zd = entity.posZ - self.posZ
                 if xd * xd + yd * yd + zd * zd < 1024.0:
-                    self.__entityAge = 0
+                    self._entityAge = 0
                 else:
                     self.setEntityDead()
 
@@ -358,4 +387,7 @@ cdef class EntityLiving(Entity):
             self._isJumping = self._rand.nextFloat() < 0.8
 
     def getCanSpawnHere(self, x, y, z):
-        return True
+        self.setPosition(x, y + self.height / 2.0, z)
+        return self._worldObj.checkIfAABBIsClear(self.boundingBox) and \
+               len(self._worldObj.getCollidingBoundingBoxes(self.boundingBox)) == 0 and \
+               not self._worldObj.getIsAnyLiquid(self.boundingBox)

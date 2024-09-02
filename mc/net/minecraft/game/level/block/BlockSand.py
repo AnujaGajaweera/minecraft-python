@@ -9,12 +9,12 @@ class BlockSand(Block):
         self.__rand = Random()
 
     def onBlockAdded(self, world, x, y, z):
-        self.__fall(world, x, y, z)
+        self.__tryToFall(world, x, y, z)
 
     def onNeighborBlockChange(self, world, x, y, z, blockType):
-        self.__fall(world, x, y, z)
+        self.__tryToFall(world, x, y, z)
 
-    def __fall(self, world, x, y, z):
+    def __tryToFall(self, world, x, y, z):
         newY = y
         while True:
             blockId = world.getBlockId(x, newY - 1, z)
@@ -43,7 +43,7 @@ class BlockSand(Block):
             if world.getBlockId(x, newY, z) == self.blocks.fire.blockID:
                 world.setBlock(x, newY, z, 0)
 
-    def onBlockPlaced(self, world, x, y, z):
+    def onPlaced(self, world, x, y, z):
         from mc.net.minecraft.game.entity.misc.EntityItem import EntityItem
         from mc.net.minecraft.game.item.ItemStack import ItemStack
 

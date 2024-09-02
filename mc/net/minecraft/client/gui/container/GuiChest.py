@@ -1,5 +1,6 @@
 from mc.net.minecraft.client.gui.container.GuiContainer import GuiContainer
 from mc.net.minecraft.client.gui.container.Slot import Slot
+from mc.net.minecraft.client.render.RenderEngine import RenderEngine
 from pyglet import gl
 
 class GuiChest(GuiContainer):
@@ -35,7 +36,7 @@ class GuiChest(GuiContainer):
     def _drawGuiContainerBackgroundLayer(self):
         tex = self.mc.renderEngine.getTexture('gui/container.png')
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
+        RenderEngine.bindTexture(tex)
         x = (self.width - self.xSize) // 2
         y = (self.height - self.ySize) // 2
         self.drawTexturedModalRect(x, y, 0, 0, self.xSize,

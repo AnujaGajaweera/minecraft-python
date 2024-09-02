@@ -21,8 +21,6 @@ import math
 import os
 
 class EntityRenderer:
-    __fogColorMultiplier = 1.0
-
     __displayActive = False
 
     __farPlaneDistance = 0.0
@@ -167,7 +165,6 @@ class EntityRenderer:
                             #gl.glViewport(0, 0, self.__mc.width, self.__mc.height)
                             self.__updateFogColor(0.0)
                             gl.glClear(gl.GL_DEPTH_BUFFER_BIT | gl.GL_COLOR_BUFFER_BIT)
-                            self.__fogColorMultiplier = 1.0
                             gl.glEnable(gl.GL_CULL_FACE)
                             self.__farPlaneDistance = 512 >> (self.__mc.options.renderDistance << 1)
                             gl.glMatrixMode(gl.GL_PROJECTION)
@@ -315,8 +312,6 @@ class EntityRenderer:
 
             self.__updateFogColor(alpha)
             gl.glClear(gl.GL_DEPTH_BUFFER_BIT | gl.GL_COLOR_BUFFER_BIT)
-            self.__fogColorMultiplier = 1.0
-
             gl.glEnable(gl.GL_CULL_FACE)
             self.__farPlaneDistance = 512 >> (self.__mc.options.renderDistance << 1)
 
@@ -370,6 +365,10 @@ class EntityRenderer:
                 (self.__mc.thePlayer.posZ - self.__mc.thePlayer.prevPosZ) * alpha
             gl.glTranslatef(-x, -y, -z)
 
+            self.__setupFog()
+            self.__mc.renderGlobal.renderSky(alpha)
+            self.__setupFog()
+
             frustum = Frustum(self.__mc.thePlayer, self.__farPlaneDistance, alpha)
             self.__mc.renderGlobal.clipRenderersByFrustum(frustum)
             self.__mc.renderGlobal.updateRenderers(self.__mc.thePlayer)
@@ -405,9 +404,6 @@ class EntityRenderer:
             self.__setupFog()
             self.__mc.effectRenderer.renderParticles(self.__mc.thePlayer, alpha)
             self.__mc.renderGlobal.oobGroundRenderer()
-            self.__setupFog()
-            self.__mc.renderGlobal.renderSky(alpha)
-            self.__setupFog()
 
             if self.__mc.objectMouseOver and self.__mc.thePlayer.isInsideOfMaterial():
                 gl.glDisable(gl.GL_ALPHA_TEST)
@@ -535,18 +531,14 @@ class EntityRenderer:
 
     def __updateFogColor(self, alpha):
         d = 1.0 - pow(1.0 / (4 - self.__mc.options.renderDistance), 0.25)
-        x = (self.__mc.theWorld.skyColor >> 16 & 0xFF) / 255.0
-        y = (self.__mc.theWorld.skyColor >> 8 & 0xFF) / 255.0
-        z = (self.__mc.theWorld.skyColor & 0xFF) / 255.0
-        self.__fogColorRed = (self.__mc.theWorld.fogColor >> 16 & 255) / 255.0
-        self.__fogColorGreen = (self.__mc.theWorld.fogColor >> 8 & 255) / 255.0
-        self.__fogColorBlue = (self.__mc.theWorld.fogColor & 255) / 255.0
-        self.__fogColorRed += (x - self.__fogColorRed) * d
-        self.__fogColorGreen += (y - self.__fogColorGreen) * d
-        self.__fogColorBlue += (z - self.__fogColorBlue) * d
-        self.__fogColorRed *= self.__fogColorMultiplier
-        self.__fogColorGreen *= self.__fogColorMultiplier
-        self.__fogColorBlue *= self.__fogColorMultiplier
+        skyVec = self.__mc.theWorld.getSkyColor(alpha)
+        fogVec = self.__mc.theWorld.getFogColor(alpha)
+        self.__fogColorRed = fogVec.xCoord
+        self.__fogColorGreen = fogVec.yCoord
+        self.__fogColorBlue = fogVec.zCoord
+        self.__fogColorRed += (skyVec.xCoord - self.__fogColorRed) * d
+        self.__fogColorGreen += (skyVec.yCoord - self.__fogColorGreen) * d
+        self.__fogColorBlue += (skyVec.zCoord - self.__fogColorBlue) * d
         block = blocks.blocksList[self.__mc.theWorld.getBlockId(
                 int(self.__mc.thePlayer.posX), int(self.__mc.thePlayer.posY + 0.12),
                 int(self.__mc.thePlayer.posZ)

@@ -4,7 +4,7 @@ class EntityZombie(EntityMob):
 
     def __init__(self, world):
         super().__init__(world)
-        self.texture = 'mob/zombie.png'
+        self._texture = 'mob/zombie.png'
         self._moveSpeed = 0.5
         self._attackStrength = 5
 

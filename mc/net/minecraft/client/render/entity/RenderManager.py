@@ -1,12 +1,15 @@
 from mc.net.minecraft.client.render.Tessellator import tessellator
 from mc.net.minecraft.client.render.entity.RenderEntity import RenderEntity
+from mc.net.minecraft.client.render.entity.RenderPlayer import RenderPlayer
 from mc.net.minecraft.client.render.entity.RenderArrow import RenderArrow
 from mc.net.minecraft.client.render.entity.RenderLiving import RenderLiving
 from mc.net.minecraft.client.render.entity.RenderCreeper import RenderCreeper
 from mc.net.minecraft.client.render.entity.RenderSpider import RenderSpider
+from mc.net.minecraft.client.render.entity.RenderSheep import RenderSheep
 from mc.net.minecraft.client.render.entity.RenderItem import RenderItem
 from mc.net.minecraft.client.render.entity.RenderTNTPrimed import RenderTNTPrimed
 from mc.net.minecraft.client.render.entity.RenderGiantZombie import RenderGiantZombie
+from mc.net.minecraft.client.model.ModelSheepFur import ModelSheepFur
 from mc.net.minecraft.client.model.ModelSheep import ModelSheep
 from mc.net.minecraft.client.model.ModelPig import ModelPig
 from mc.net.minecraft.client.model.ModelSkeleton import ModelSkeleton
@@ -41,11 +44,11 @@ class RenderManager:
         self.__entityRenderMap = {}
         self.__entityRenderMap[EntitySpider] = RenderSpider()
         self.__entityRenderMap[EntityPig] = RenderLiving(ModelPig(), 0.7)
-        self.__entityRenderMap[EntitySheep] = RenderLiving(ModelSheep(), 0.7)
+        self.__entityRenderMap[EntitySheep] = RenderSheep(ModelSheep(), ModelSheepFur(), 0.7)
         self.__entityRenderMap[EntityCreeper] = RenderCreeper()
         self.__entityRenderMap[EntitySkeleton] = RenderLiving(ModelSkeleton(), 0.5)
         self.__entityRenderMap[EntityZombie] = RenderLiving(ModelZombie(), 0.5)
-        self.__entityRenderMap[EntityPlayer] = RenderLiving(ModelBiped(), 0.5)
+        self.__entityRenderMap[EntityPlayer] = RenderPlayer()
         self.__entityRenderMap[EntityGiantZombie] = RenderGiantZombie(ModelZombie(), 0.5, 6.0)
         self.__entityRenderMap[EntityLiving] = RenderLiving(ModelBiped(), 0.5)
         self.__entityRenderMap[Entity] = RenderEntity()

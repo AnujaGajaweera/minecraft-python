@@ -18,7 +18,7 @@ class BlockOre(Block):
     def quantityDropped(self, random):
         return 1
 
-    def onBlockPlaced(self, world, x, y, z):
+    def onPlaced(self, world, x, y, z):
         from mc.net.minecraft.game.entity.misc.EntityItem import EntityItem
         from mc.net.minecraft.game.item.Items import items
         from mc.net.minecraft.game.item.ItemStack import ItemStack

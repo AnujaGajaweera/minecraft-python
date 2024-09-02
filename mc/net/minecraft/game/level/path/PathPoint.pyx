@@ -1,8 +1,10 @@
-import math
+# cython: language_level=3
 
-class PathPoint:
+from libc.math cimport sqrt
 
-    def __init__(self, x, y, z):
+cdef class PathPoint:
+
+    def __init__(self, int x, int y, int z):
         self.xCoord = x
         self.yCoord = y
         self.zCoord = z
@@ -14,11 +16,11 @@ class PathPoint:
         self.previous = None
         self.isFirst = False
 
-    def distanceTo(self, point):
-        xd = point.xCoord - self.xCoord
-        yd = point.yCoord - self.yCoord
-        zd = point.zCoord - self.zCoord
-        return math.sqrt(xd * xd + yd * yd + zd * zd)
+    cdef float distanceTo(self, PathPoint point):
+        cdef float xd = point.xCoord - self.xCoord
+        cdef float yd = point.yCoord - self.yCoord
+        cdef float zd = point.zCoord - self.zCoord
+        return sqrt(xd * xd + yd * yd + zd * zd)
 
     def __eq__(self, point):
         return point.hash == self.hash
@@ -26,7 +28,7 @@ class PathPoint:
     def __hash__(self):
         return self.hash
 
-    def isAssigned(self):
+    cdef inline bint isAssigned(self):
         return self.index >= 0
 
     def toString(self):
