@@ -10,7 +10,6 @@ class SoundManager:
     listener = pyglet.media.get_audio_driver().get_listener()
     __channels = [pyglet.media.Player() for _ in range(NORMAL_CHANNELS)]
     __musicStream = None
-    __supported = True
     __soundPoolSounds = SoundPool()
     __soundPoolMusic = SoundPool()
     __latestSoundID = 0
@@ -21,7 +20,6 @@ class SoundManager:
 
     def loadSoundSettings(self, options):
         self.__options = options
-        return
         if not self.__loaded and (options.sound or options.music):
             self.__tryToSetLibraryAndCodecs()
 
@@ -31,6 +29,7 @@ class SoundManager:
         self.__options.sound = False
         self.__options.music = False
         self.__options.saveOptions()
+        self.__loaded = True
         try:
             import pyogg
         except:
@@ -52,14 +51,12 @@ class SoundManager:
                         print('Using gst-python audio library.')
                     else:
                         print('Alternate codecs FFMPEG and gst-python are also missing. Audio is not supported.')
-                        self.__supported = False
+                        self.__loaded = False
                 else:
                     print('FFMPEG is additionally missing. Audio is not supported.')
-                    self.__supported = False
+                    self.__loaded = False
 
-        self.__loaded = True
-
-        if not self.__supported:
+        if not self.__loaded:
             return
 
         self.__options.sound = sound
@@ -81,7 +78,6 @@ class SoundManager:
         clock.schedule_once(self.removeTempSources, 10)
 
     def onSoundOptionsChanged(self):
-        return
         if not self.__loaded and (self.__options.sound or self.__options.music):
             self.__tryToSetLibraryAndCodecs()
 
@@ -90,7 +86,6 @@ class SoundManager:
             self.__musicStream = None
 
     def closeMinecraft(self):
-        return
         if not self.__loaded:
             return
 
@@ -106,15 +101,15 @@ class SoundManager:
     def addMusic(self, music, file):
         self.__soundPoolMusic.addSound(music, file)
 
-    def playStreaming(self, x, y, z):
-        return
-        if not self.__options.music or not self.__supported: return
+    def playRandomMusicIfReady(self, x, y, z):
+        if not self.__options.music or not self.__loaded:
+            return
+
         if not self.__musicStream or not self.__musicStream._source:
             entry = self.__soundPoolMusic.getRandomSoundFromSoundPool('calm')
             self.__musicStream = pyglet.media.load(entry.soundUrl).play()
 
     def setListener(self, listener, partialTick):
-        return
         if not self.__loaded or not self.__options.sound or not listener:
             return
 
@@ -136,9 +131,8 @@ class SoundManager:
         self.listener.up_orientation = (upX, upY, upZ)
 
     def playSound(self, sound, x, y, z, volume, pitch):
-        return
         entry = self.__soundPoolSounds.getRandomSoundFromSoundPool(sound)
-        if not entry or not self.__supported or not self.__options.sound or \
+        if not entry or not self.__loaded or not self.__options.sound or \
            volume <= 0.0:
             return
 
@@ -176,9 +170,8 @@ class SoundManager:
         self.__playSound(player, entry)
 
     def playSoundFX(self, sound, volume, pitch):
-        return
         entry = self.__soundPoolSounds.getRandomSoundFromSoundPool(sound)
-        if not entry or not self.__supported or not self.__options.sound:
+        if not entry or not self.__loaded or not self.__options.sound:
             return
 
         self.__latestSoundID = (self.__latestSoundID + 1) % 256

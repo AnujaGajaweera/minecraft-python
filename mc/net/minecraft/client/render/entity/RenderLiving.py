@@ -7,7 +7,7 @@ class RenderLiving(Render):
 
     def __init__(self, model, shadowSize):
         super().__init__()
-        self.__mainModel = model
+        self._mainModel = model
         self._shadowSize = shadowSize
         self.__renderPassModel = None
 
@@ -50,12 +50,14 @@ class RenderLiving(Render):
             y = min(y, 1.0)
             self._loadDownloadableImageTexture(entity.skinUrl, entity.getTexture())
             gl.glEnable(gl.GL_ALPHA_TEST)
-            self.__mainModel.render(x, y, z, rotationYaw - renderYaw,
-                                    rotationPitch, 1.0)
+            self._mainModel.render(x, y, z, rotationYaw - renderYaw,
+                                   rotationPitch, 1.0)
             for i in range(4):
                 if self._shouldRenderPass(entity, i):
                     self.__renderPassModel.render(x, y, z, rotationYaw - renderYaw,
                                                   rotationPitch, 1.0)
+                    gl.glDisable(gl.GL_BLEND)
+                    gl.glEnable(gl.GL_ALPHA_TEST)
 
             br = entity.getBrightness(a)
             color = self._getColorMultiplier(entity, br, a)
@@ -67,10 +69,11 @@ class RenderLiving(Render):
                 gl.glDepthFunc(gl.GL_EQUAL)
                 if entity.hurtTime > 0 or entity.deathTime > 0:
                     gl.glColor4f(br, 0.0, 0.0, 0.4)
-                    self.__mainModel.render(x, y, z, rotationYaw - renderYaw,
-                                            rotationPitch, 1.0)
+                    self._mainModel.render(x, y, z, rotationYaw - renderYaw,
+                                           rotationPitch, 1.0)
                     for i in range(4):
                         if self._shouldRenderPass(entity, i):
+                            gl.glColor4f(br, 0.0, 0.0, 0.4)
                             self.__renderPassModel.render(x, y, z, rotationYaw - renderYaw,
                                                           rotationPitch, 1.0)
 
@@ -80,10 +83,11 @@ class RenderLiving(Render):
                     b = (color & 255) / 255.0
                     a = ((color % 0x100000000) >> 24) / 255.0
                     gl.glColor4f(r, g, b, a)
-                    self.__mainModel.render(x, y, z, rotationYaw - renderYaw,
-                                            rotationPitch, 1.0)
+                    self._mainModel.render(x, y, z, rotationYaw - renderYaw,
+                                           rotationPitch, 1.0)
                     for i in range(4):
                         if self._shouldRenderPass(entity, i):
+                            gl.glColor4f(r, g, b, a)
                             self.__renderPassModel.render(x, y, z, rotationYaw - renderYaw,
                                                           rotationPitch, 1.0)
 

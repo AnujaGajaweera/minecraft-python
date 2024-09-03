@@ -58,6 +58,14 @@ class RenderManager:
         for render in self.__entityRenderMap.values():
             render.setRenderManager(self)
 
+    def getEntityRenderObject(self, entity):
+        render = self.__entityRenderMap.get(entity.__class__)
+        if not render and entity.__class__ != Entity:
+            render = self.__entityRenderMap.get(entity.__class__.__bases__[0])
+            self.__entityRenderMap[entity.__class__] = render
+
+        return render
+
     def cacheActiveRenderInfo(self, world, renderEngine, player, a):
         self.worldObj = world
         self.renderEngine = renderEngine
@@ -80,11 +88,7 @@ class RenderManager:
         self.renderEntityWithPosYaw(entity, xd, yd, zd, yaw, a)
 
     def renderEntityWithPosYaw(self, entity, xd, yd, zd, yaw, a):
-        render = self.__entityRenderMap.get(entity.__class__)
-        if not render and entity.__class__ != Entity:
-            render = self.__entityRenderMap.get(entity.__class__.__bases__[0])
-            self.__entityRenderMap[entity.__class__] = render
-
+        render = self.getEntityRenderObject(entity)
         if render:
             render.doRender(entity, xd, yd, zd, yaw, a)
             render.renderShadow(entity, xd, yd, zd, a)

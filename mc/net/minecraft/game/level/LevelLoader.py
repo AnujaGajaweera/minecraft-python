@@ -49,7 +49,7 @@ class LevelLoader:
         world.skyColor = environmentTag['SkyColor'].real
         world.fogColor = environmentTag['FogColor'].real
         world.skyBrightness = max(environmentTag['SkyBrightness'].real, 0)
-        if world.skyBrightness > 15:
+        if world.skyBrightness > 16:
             world.skyBrightness = world.skyBrightness * 15 // 100
 
         world.cloudHeight = environmentTag['CloudHeight'].real

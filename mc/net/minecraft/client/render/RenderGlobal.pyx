@@ -100,6 +100,9 @@ cdef class RenderGlobal:
         if self.__worldObj:
             self.__worldObj.removeWorldAccess(self)
 
+        self.__prevSortX = -9999.0
+        self.__prevSortY = -9999.0
+        self.__prevSortZ = -9999.0
         RenderManager.instance.set(world)
         self.__worldObj = world
         self.__globalRenderBlocks = RenderBlocks(world)
@@ -675,7 +678,7 @@ cdef class RenderGlobal:
             )
 
     def playMusic(self, str music, float x, float y, float z, float _):
-        self.__mc.sndManager.playStreaming(x, y, z)
+        self.__mc.sndManager.playRandomMusicIfReady(x, y, z)
 
     def obtainEntitySkin(self, entity):
         if entity.skinUrl:

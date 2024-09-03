@@ -1,3 +1,4 @@
+from mc.net.minecraft.client.render.entity.RenderManager import RenderManager
 from mc.net.minecraft.client.render.RenderBlocks import RenderBlocks
 from mc.net.minecraft.client.render.Tessellator import tessellator
 from mc.net.minecraft.client.RenderHelper import RenderHelper
@@ -18,45 +19,48 @@ class ItemRenderer:
         self.__renderBlocksInstance = RenderBlocks()
 
     def renderItemInFirstPerson(self, alpha):
-        progress = self.__prevEquippedProgress + (self.__equippedProgress - self.__prevEquippedProgress) * alpha
+        progress = self.__prevEquippedProgress + \
+                   (self.__equippedProgress - self.__prevEquippedProgress) * alpha
         gl.glPushMatrix()
         gl.glRotatef(
-            self.__mc.thePlayer.prevRotationPitch + (self.__mc.thePlayer.rotationPitch - self.__mc.thePlayer.prevRotationPitch) * alpha,
+            self.__mc.thePlayer.prevRotationPitch + \
+             (self.__mc.thePlayer.rotationPitch - self.__mc.thePlayer.prevRotationPitch) * alpha,
             1.0, 0.0, 0.0
         )
         gl.glRotatef(
-            self.__mc.thePlayer.prevRotationYaw + (self.__mc.thePlayer.rotationYaw - self.__mc.thePlayer.prevRotationYaw) * alpha,
+            self.__mc.thePlayer.prevRotationYaw + \
+             (self.__mc.thePlayer.rotationYaw - self.__mc.thePlayer.prevRotationYaw) * alpha,
             0.0, 1.0, 0.0
         )
         RenderHelper.enableStandardItemLighting()
         gl.glPopMatrix()
-        gl.glPushMatrix()
-        if self.__swingProgress == -1:
-            self.__swingProgress += 1
-        if self.__itemSwingState:
-            slot = (self.__swingProgress + alpha) / 8.0
-            swingY = math.sin(slot * math.pi)
-            swingX = math.sin(math.sqrt(slot) * math.pi)
-            gl.glTranslatef(-swingX * 0.4,
-                            math.sin(math.sqrt(slot) * math.pi * 2.0) * 0.2,
-                            -swingY * 0.2)
-
-        gl.glTranslatef(0.56, -0.52 - (1.0 - progress) * 0.6, -0.71999997)
-        gl.glRotatef(45.0, 0.0, 1.0, 0.0)
-        gl.glEnable(gl.GL_NORMALIZE)
-        if self.__itemSwingState:
-            slot = (self.__swingProgress + alpha) / 8.0
-            swingY = math.sin((slot * slot) * math.pi)
-            swingX = math.sin(math.sqrt(slot) * math.pi)
-            gl.glRotatef(-swingY * 20.0, 0.0, 1.0, 0.0)
-            gl.glRotatef(-swingX * 20.0, 0.0, 0.0, 1.0)
-            gl.glRotatef(-swingX * 80.0, 1.0, 0.0, 0.0)
-
-        brightness = self.__mc.theWorld.getBrightness(int(self.__mc.thePlayer.posX),
-                                                      int(self.__mc.thePlayer.posY),
-                                                      int(self.__mc.thePlayer.posZ))
-        gl.glColor4f(brightness, brightness, brightness, 1.0)
+        br = self.__mc.theWorld.getBrightness(int(self.__mc.thePlayer.posX),
+                                              int(self.__mc.thePlayer.posY),
+                                              int(self.__mc.thePlayer.posZ))
+        gl.glColor4f(br, br, br, 1.0)
         if self.__itemToRender:
+            gl.glPushMatrix()
+            if self.__swingProgress == -1:
+                self.__swingProgress += 1
+            if self.__itemSwingState:
+                slot = (self.__swingProgress + alpha) / 8.0
+                swingY = math.sin(slot * math.pi)
+                swingX = math.sin(math.sqrt(slot) * math.pi)
+                gl.glTranslatef(-swingX * 0.4,
+                                math.sin(math.sqrt(slot) * math.pi * 2.0) * 0.2,
+                                -swingY * 0.2)
+
+            gl.glTranslatef(0.56, -0.52 - (1.0 - progress) * 0.6, -0.71999997)
+            gl.glRotatef(45.0, 0.0, 1.0, 0.0)
+            gl.glEnable(gl.GL_NORMALIZE)
+            if self.__itemSwingState:
+                slot = (self.__swingProgress + alpha) / 8.0
+                swingY = math.sin((slot * slot) * math.pi)
+                swingX = math.sin(math.sqrt(slot) * math.pi)
+                gl.glRotatef(-swingY * 20.0, 0.0, 1.0, 0.0)
+                gl.glRotatef(-swingX * 20.0, 0.0, 0.0, 1.0)
+                gl.glRotatef(-swingX * 80.0, 1.0, 0.0, 0.0)
+
             gl.glScalef(0.4, 0.4, 0.4)
             gl.glBindTexture(gl.GL_TEXTURE_2D,
                              self.__mc.renderEngine.getTexture('terrain.png'))
@@ -67,9 +71,11 @@ class ItemRenderer:
                 )
             else:
                 if self.__itemToRender.itemID < 256:
-                    gl.glBindTexture(gl.GL_TEXTURE_2D, self.__mc.renderEngine.getTexture('terrain.png'))
+                    gl.glBindTexture(gl.GL_TEXTURE_2D,
+                                     self.__mc.renderEngine.getTexture('terrain.png'))
                 else:
-                    gl.glBindTexture(gl.GL_TEXTURE_2D, self.__mc.renderEngine.getTexture('gui/items.png'))
+                    gl.glBindTexture(gl.GL_TEXTURE_2D,
+                                     self.__mc.renderEngine.getTexture('gui/items.png'))
 
                 t = tessellator
                 u0 = (self.__itemToRender.getItem().getIconIndex() % 16 << 4) / 256.0
@@ -145,14 +151,46 @@ class ItemRenderer:
 
                 t.draw()
                 gl.glDisable(gl.GL_NORMALIZE)
+
+            gl.glPopMatrix()
         else:
-            gl.glScalef(1.0, -1.0, -1.0)
-            gl.glTranslatef(0.0, 0.2, 0.0)
-            gl.glRotatef(-120.0, 0.0, 0.0, 1.0)
-            gl.glScalef(1.0, 1.0, 1.0)
+            gl.glPushMatrix()
+            if self.__swingProgress == -1:
+                self.__swingProgress += 1
+            if self.__itemSwingState:
+                slot = (self.__swingProgress + alpha) / 8.0
+                swingY = math.sin(slot * math.pi)
+                swingX = math.sin(math.sqrt(slot) * math.pi)
+                gl.glTranslatef(-swingX * 0.3,
+                                math.sin(math.sqrt(slot) * math.pi * 2.0) * 0.4,
+                                -swingY * 0.4)
+
+            gl.glTranslatef(0.64000005, -0.6 - (1.0 - progress) * 0.6, -0.71999997)
+            gl.glRotatef(45.0, 0.0, 1.0, 0.0)
+            gl.glEnable(gl.GL_NORMALIZE)
+            if self.__itemSwingState:
+                slot = (self.__swingProgress + alpha) / 8.0
+                swingY = math.sin(slot * slot * math.pi)
+                swingX = math.sin(math.sqrt(slot) * math.pi)
+                gl.glRotatef(swingX * 70.0, 0.0, 1.0, 0.0)
+                gl.glRotatef(-swingY * 20.0, 0.0, 0.0, 1.0)
+
+            gl.glBindTexture(
+                gl.GL_TEXTURE_2D,
+                self.__mc.renderEngine.getTextureForDownloadableImage(
+                    self.__mc.thePlayer.skinUrl, self.__mc.thePlayer.getTexture()
+                )
+            )
+            gl.glTranslatef(-0.2, -0.3, 0.1)
+            gl.glRotatef(120.0, 0.0, 0.0, 1.0)
+            gl.glRotatef(200.0, 1.0, 0.0, 0.0)
+            gl.glRotatef(-135.0, 0.0, 1.0, 0.0)
+            gl.glScalef(1.0 / 16.0, 1.0 / 16.0, 1.0 / 16.0)
+            gl.glTranslatef(6.0, 0.0, 0.0)
+            RenderManager.instance.getEntityRenderObject(self.__mc.thePlayer).drawFirstPersonHand()
+            gl.glPopMatrix()
 
         gl.glDisable(gl.GL_NORMALIZE)
-        gl.glPopMatrix()
         RenderHelper.disableStandardItemLighting()
 
     def renderOverlays(self, alpha):

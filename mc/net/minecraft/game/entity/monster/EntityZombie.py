@@ -8,5 +8,15 @@ class EntityZombie(EntityMob):
         self._moveSpeed = 0.5
         self._attackStrength = 5
 
+    def onLivingUpdate(self):
+        br = self.getBrightness(1.0)
+        if br > 0.5 and self._worldObj.canBlockSeeTheSky(int(self.posX),
+                                                         int(self.posY),
+                                                         int(self.posZ)) and \
+           self._rand.nextFloat() * 40.0 < (br - 0.5) * 2.0:
+            self.fire = 300
+
+        super().onLivingUpdate()
+
     def _getEntityString(self):
         return 'Zombie'

@@ -66,7 +66,7 @@ class BlockCrops(BlockFlower):
         from mc.net.minecraft.game.item.Items import items
         super().onBlockDestroyedByPlayer(world, x, y, z, metadata)
         for i in range(3):
-            if world.rand.nextInt(18) <= metadata:
+            if world.rand.nextInt(15) <= metadata:
                 dropX = world.rand.nextFloat() * 0.7 + 0.15
                 dropY = world.rand.nextFloat() * 0.7 + 0.15
                 dropZ = world.rand.nextFloat() * 0.7 + 0.15

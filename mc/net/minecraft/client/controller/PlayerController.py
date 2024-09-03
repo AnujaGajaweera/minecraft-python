@@ -40,9 +40,6 @@ class PlayerController:
     def getBlockReachDistance(self):
         return 5.0
 
-    def flipPlayer(self, player):
-        pass
-
     def onUpdate(self):
         pass
 

@@ -669,7 +669,6 @@ class Minecraft(window.Window):
             if not self.thePlayer:
                 self.thePlayer = EntityPlayerSP(self, world, self.session)
                 self.thePlayer.preparePlayerToSpawn()
-                self.playerController.flipPlayer(self.thePlayer)
                 if world:
                     world.spawnEntityInWorld(self.thePlayer)
                     world.playerEntity = self.thePlayer

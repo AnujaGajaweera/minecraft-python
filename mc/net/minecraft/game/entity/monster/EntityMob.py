@@ -25,6 +25,15 @@ class EntityMob(EntityCreature):
         else:
             return None
 
+    def attackEntityFrom(self, entity, damage):
+        if super().attackEntityFrom(entity, damage):
+            if entity != self:
+                self._playerToAttack = entity
+
+            return True
+        else:
+            return False
+
     def _attackEntity(self, entity, distance):
         if distance < 2.5 and entity.boundingBox.maxY > self.boundingBox.minY and \
            entity.boundingBox.minY < self.boundingBox.maxY:
@@ -44,5 +53,5 @@ class EntityMob(EntityCreature):
         return 'Monster'
 
     def getCanSpawnHere(self, x, y, z):
-        return self._worldObj.getBlockLightValue(int(x), int(y), int(z)) <= 8 and \
-               super().getCanSpawnHere(x, y, z)
+        light = self._worldObj.getBlockLightValue(int(x), int(y), int(z))
+        return light <= self._rand.nextInt(8) and super().getCanSpawnHere(x, y, z)

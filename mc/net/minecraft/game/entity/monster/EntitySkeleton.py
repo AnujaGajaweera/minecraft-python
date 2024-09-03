@@ -9,6 +9,16 @@ class EntitySkeleton(EntityMob):
         super().__init__(world)
         self._texture = 'mob/skeleton.png'
 
+    def onLivingUpdate(self):
+        br = self.getBrightness(1.0)
+        if br > 0.5 and self._worldObj.canBlockSeeTheSky(int(self.posX),
+                                                         int(self.posY),
+                                                         int(self.posZ)) and \
+           self._rand.nextFloat() * 40.0 < (br - 0.5) * 2.0:
+            self.fire = 300
+
+        super().onLivingUpdate()
+
     def _attackEntity(self, entity, distance):
         if distance >= 10.0:
             return

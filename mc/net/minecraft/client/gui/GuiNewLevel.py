@@ -9,7 +9,7 @@ class GuiNewLevel(GuiScreen):
         self.__worldType = ('Inland', 'Island', 'Floating', 'Flat')
         self.__worldShape = ('Square', 'Long', 'Deep')
         self.__worldSize = ('Small', 'Normal', 'Huge')
-        self.__worldTheme = ('Normal', 'Hell')
+        self.__worldTheme = ('Normal', 'Hell', 'Paradise', 'Woods')
         self.__selectedWorldType = 1
         self.__selectedWorldShape = 0
         self.__selectedWorldSize = 1

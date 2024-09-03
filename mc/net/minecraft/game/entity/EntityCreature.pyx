@@ -11,13 +11,13 @@ cdef class EntityCreature(EntityLiving):
 
     cdef:
         object __pathToEntity
-        Entity __playerToAttack
+        public Entity _playerToAttack
         public bint _hasAttacked
 
     def __init__(self, World world):
         super().__init__(world)
         self.__pathToEntity = None
-        self.__playerToAttack = None
+        self._playerToAttack = None
         self._hasAttacked = False
 
     def _updatePlayerActionState(self):
@@ -26,26 +26,26 @@ cdef class EntityCreature(EntityLiving):
         cdef bint isInWater, isInLava
 
         self._hasAttacked = False
-        if not self.__playerToAttack:
-            self.__playerToAttack = self._findPlayerToAttack()
-            if self.__playerToAttack:
+        if not self._playerToAttack:
+            self._playerToAttack = self._findPlayerToAttack()
+            if self._playerToAttack:
                 self.__pathToEntity = self._worldObj.pathFinder.createEntityPathTo(
-                    self, self.__playerToAttack, 16.0
+                    self, self._playerToAttack, 16.0
                 )
-        elif not self.__playerToAttack.isEntityAlive():
-            self.__playerToAttack = None
+        elif not self._playerToAttack.isEntityAlive():
+            self._playerToAttack = None
         else:
-            xd = self.__playerToAttack.posX - self.posX
-            yd = self.__playerToAttack.posY - self.posY
-            zd = self.__playerToAttack.posZ - self.posZ
+            xd = self._playerToAttack.posX - self.posX
+            yd = self._playerToAttack.posY - self.posY
+            zd = self._playerToAttack.posZ - self.posZ
             d = sqrt(xd * xd + yd * yd + zd * zd)
             if not self._worldObj.rayTraceBlocks(Vec3D(self.posX,
                                                        self.posY + self._getEyeHeight(),
                                                        self.posZ),
-                                                 Vec3D(self.__playerToAttack.posX,
-                                                       self.__playerToAttack.posY + self.__playerToAttack._getEyeHeight(),
-                                                       self.__playerToAttack.posZ)):
-                self._attackEntity(self.__playerToAttack, d)
+                                                 Vec3D(self._playerToAttack.posX,
+                                                       self._playerToAttack.posY + self._playerToAttack._getEyeHeight(),
+                                                       self._playerToAttack.posZ)):
+                self._attackEntity(self._playerToAttack, d)
 
         if self._hasAttacked:
             self._moveStrafing = 0.0
@@ -53,7 +53,7 @@ cdef class EntityCreature(EntityLiving):
             self._isJumping = False
             return
 
-        if not self.__playerToAttack or self.__pathToEntity and \
+        if not self._playerToAttack or self.__pathToEntity and \
              self._rand.nextInt(20) != 0:
             if not self.__pathToEntity or self._rand.nextInt(100) == 0:
                 toX = -1
@@ -77,7 +77,7 @@ cdef class EntityCreature(EntityLiving):
                     )
         else:
             self.__pathToEntity = self._worldObj.pathFinder.createEntityPathTo(
-                self, self.__playerToAttack, 16.0
+                self, self._playerToAttack, 16.0
             )
 
         isInWater = self.handleWaterMovement()

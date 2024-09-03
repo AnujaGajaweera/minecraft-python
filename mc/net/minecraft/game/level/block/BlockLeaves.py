@@ -7,7 +7,7 @@ class BlockLeaves(BlockLeavesBase):
         super().__init__(blocks, 18, 52, Material.leaves, True)
 
     def quantityDropped(self, random):
-        if random.nextInt(6) == 0:
+        if random.nextInt(10) == 0:
             return 1
         else:
             return 0

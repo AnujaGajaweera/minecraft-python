@@ -10,8 +10,17 @@ class EntitySpider(EntityMob):
         self.setSize(1.4, 0.9)
         self._moveSpeed = 0.8
 
+    def _findPlayerToAttack(self):
+        br = self.getBrightness(1.0)
+        if br < 0.5:
+            d = self._worldObj.playerEntity.getDistanceSqToEntity(self)
+            if d < 256.0:
+                return self._worldObj.playerEntity
+
+        return None
+
     def _attackEntity(self, entity, distance):
-        if distance > 2.0 and distance < 6.0 and self._rand.nextInt(5) == 0:
+        if distance > 2.0 and distance < 6.0 and self._rand.nextInt(10) == 0:
             if self.onGround:
                 xd = entity.posX - self.posX
                 zd = entity.posZ - self.posZ

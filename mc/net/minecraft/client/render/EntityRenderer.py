@@ -366,6 +366,7 @@ class EntityRenderer:
             gl.glTranslatef(-x, -y, -z)
 
             self.__setupFog()
+            gl.glEnable(gl.GL_FOG)
             self.__mc.renderGlobal.renderSky(alpha)
             self.__setupFog()
 

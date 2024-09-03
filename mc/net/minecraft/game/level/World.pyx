@@ -41,6 +41,7 @@ cdef short floodFillCounter = 0
 
 cdef class World:
     MAX_TICKS = 200
+    TIME_CYCLE = 24000
 
     def __cinit__(self):
         cdef int i
@@ -89,7 +90,7 @@ cdef class World:
 
         self.worldTime = 0
         self.difficultySetting = 2
-        self.__timeCycle = 24000
+        self.__timeCycle = World.TIME_CYCLE
 
     def __dealloc__(self):
         free(self.blocks)
@@ -113,14 +114,14 @@ cdef class World:
             self.entityMap = EntityMap(self.width, self.height, self.length)
 
     def generate(self, int w, int h, int d, bytearray b):
-        cdef int x, y, z, i
+        cdef int x, y, z, i, skyBrightness, br
         cdef char blockId
 
         self.width = w
         self.height = h
         self.length = d
         self.blocks = <char*>malloc(sizeof(char) * len(b))
-        self.__size = len(b)
+        self.blocksSize = len(b)
 
         for i in range(256):
             self.lightOpacity[i] = blocks.lightOpacity[i]
@@ -161,12 +162,28 @@ cdef class World:
             self.heightMap[i] = h
 
         self.__light = Light(self)
-        self.__calculateLighting()
+        skyBrightness = self.skylightSubtracted
+        for x in range(self.width):
+            for z in range(self.length):
+                y = self.height - 1
+                while y > 0 and self.lightOpacity[self.getBlockId(x, y, z)] == 0:
+                    y -= 1
+
+                self.heightMap[x + z * self.width] = y + 1
+                for y in range(self.height):
+                    i = (y * self.length + z) * self.width + x
+                    br = self.heightMap[x + z * self.width]
+                    br = skyBrightness if y >= br else 0
+                    br = max(br, self.lightValue[<char>(self.blocks[i])])
+                    self.data[i] = <char>((self.data[i] & 240) + br)
+
+        self.__light.updateBlockLight(0, 0, 0, self.width, self.height, self.length)
+
         for worldAccess in self.worldAccesses:
             worldAccess.loadRenderers()
 
         self.__tickList.clear()
-        self.__findSpawn()
+        self.findSpawn()
         self.load()
         gc.collect()
 
@@ -178,7 +195,7 @@ cdef class World:
         self.height = h
         self.length = d
         self.blocks = <char*>malloc(sizeof(char) * len(b))
-        self.__size = len(b)
+        self.blocksSize = len(b)
 
         for i in range(256):
             self.lightOpacity[i] = blocks.lightOpacity[i]
@@ -221,16 +238,15 @@ cdef class World:
             self.heightMap[i] = h
 
         self.__light = Light(self)
-        self.__calculateLighting()
         for worldAccess in self.worldAccesses:
             worldAccess.loadRenderers()
 
         self.__tickList.clear()
-        self.__findSpawn()
+        self.findSpawn()
         self.load()
         gc.collect()
 
-    cdef __findSpawn(self):
+    cdef findSpawn(self):
         cdef int i, x, y, z, xx, yy, zz
         cdef Random random = Random()
 
@@ -243,7 +259,7 @@ cdef class World:
             x = random.nextInt(self.width // 2) + self.width // 4
             z = random.nextInt(self.length // 2) + self.length // 4
             y = self.__getFirstUncoveredBlock(x, z) + 1
-            if i == 10000:
+            if i == 1000000:
                 self.xSpawn = x
                 self.ySpawn = self.height + 100
                 self.zSpawn = z
@@ -252,41 +268,30 @@ cdef class World:
             if y >= 4 and y > self.waterLevel:
 
                 def checkSolid():
-                    for xx in range(x - 5, x + 6):
-                        for yy in range(y, y + 3):
-                            for zz in range(z - 5, z + 6):
+                    for xx in range(x - 3, x + 4):
+                        for yy in range(y - 1, y + 3):
+                            for zz in range(z - 5, z + 4):
                                 if self.getBlockMaterial(xx, yy, zz).isSolid():
                                     return True
 
                     return False
 
-                if checkSolid():
+                def checkOpaque():
+                    for xx in range(x - 3, x + 4):
+                        for zz in range(z - 5, z + 4):
+                            if not blocks.opaqueCubeLookup[self.getBlockId(xx, y - 2,
+                                                                           zz)]:
+                                return True
+
+                    return False
+
+                if checkSolid() or checkOpaque():
                     continue
 
                 self.xSpawn = x
                 self.ySpawn = y
                 self.zSpawn = z
                 break
-
-    cdef __calculateLighting(self):
-        cdef int skyBrightness, x, z, y, i, br
-
-        skyBrightness = self.skylightSubtracted
-        for x in range(self.width):
-            for z in range(self.length):
-                y = self.height - 1
-                while y > 0 and self.lightOpacity[self.getBlockId(x, y, z)] == 0:
-                    y -= 1
-
-                self.heightMap[x + z * self.width] = y + 1
-                for y in range(self.height):
-                    i = (y * self.length + z) * self.width + x
-                    br = self.heightMap[x + z * self.width]
-                    br = skyBrightness if y >= br else 0
-                    br = max(br, self.lightValue[<char>(self.blocks[i])])
-                    self.data[i] = <char>((self.data[i] & 240) + br)
-
-        self.__light.updateBlockLight(0, 0, 0, self.width, self.height, self.length)
 
     def addWorldAccess(self, worldAccess):
         for entity in self.entityMap.all:
@@ -365,8 +370,10 @@ cdef class World:
         if blockType != 0:
             blocks.blocksList[blockType].onBlockAdded(self, x, y, z)
 
-        self.__light.updateSkylight(x, z, 1, 1)
-        self.__light.updateBlockLight(x, y, z, x + 1, y + 1, z + 1)
+        if self.lightOpacity[oldBlock] != self.lightOpacity[blockType] or \
+           self.lightValue[oldBlock] != 0 or self.lightValue[blockType] != 0:
+            self.__light.updateSkylight(x, z, 1, 1)
+            self.__light.updateBlockLight(x, y, z, x + 1, y + 1, z + 1)
 
         for worldAccess in self.worldAccesses:
             worldAccess.markBlockAndNeighborsNeedsUpdate(x, y, z)
@@ -454,7 +461,10 @@ cdef class World:
         return Vec3D(x, y, z)
 
     cdef float getCelestialAngle(self, float alpha):
-        return (self.worldTime + alpha) / self.__timeCycle - 0.2
+        if self.skyBrightness > 15:
+            return 0.0
+        else:
+            return (self.worldTime + alpha) / self.__timeCycle - 0.15
 
     def getFogColor(self, float alpha):
         cdef float theta, x, y, z
@@ -462,7 +472,6 @@ cdef class World:
         theta = self.getCelestialAngle(alpha)
         theta = cos(theta * pi * 2.0) * 2.0 + 0.5
         theta = min(max(theta, 0.0), 1.0)
-        theta *= self.skyBrightness / 15
 
         x = (self.fogColor >> 16 & 255) / 255.0
         y = (self.fogColor >> 8 & 255) / 255.0
@@ -478,7 +487,6 @@ cdef class World:
         theta = self.getCelestialAngle(alpha)
         theta = cos(theta * pi * 2.0) * 2.0 + 0.5
         theta = min(max(theta, 0.0), 1.0)
-        theta *= self.skyBrightness / 15
 
         x = (self.cloudColor >> 16 & 255) / 255.0
         y = (self.cloudColor >> 8 & 255) / 255.0
@@ -491,7 +499,7 @@ cdef class World:
     def getSkyBrightness(self):
         cdef int br
         cdef float theta = self.getCelestialAngle(1.0)
-        theta = cos(theta * pi * 2.0) * 2.0 + 0.5
+        theta = cos(theta * pi * 2.0) * 1.5 + 0.5
         theta = min(max(theta, 0.0), 1.0)
         br = <int>(theta * ((15 * self.skyBrightness) / 15.0 - 4.0) + 4.0)
         return max(min(br, 15), 4)
@@ -708,20 +716,7 @@ cdef class World:
         self.rotSpawn = rotationYaw
 
     cpdef inline float getBrightness(self, int x, int y, int z):
-        if x < 0:
-            x = 0
-        elif x >= self.width:
-            x = self.width - 1
-        if y < 0:
-            y = 0
-        elif y >= self.height:
-            y = self.height - 1
-        if z < 0:
-            z = 0
-        elif z >= self.length:
-            z = self.length - 1
-
-        return self.__lightBrightnessTable[self.data[(y * self.length + z) * self.width + x] & 15]
+        return self.__lightBrightnessTable[self.getBlockLightValue(x, y, z)]
 
     cpdef inline char getBlockLightValue(self, int x, int y, int z):
         if x < 0:
@@ -737,7 +732,13 @@ cdef class World:
         elif z >= self.length:
             z = self.length - 1
 
-        return <char>(self.data[(y * self.length + z) * self.width + x] & 15)
+        if self.blocks[(y * self.length + z) * self.width + x] == blocks.stairSingle.blockID:
+            if y < self.height - 1:
+                return <char>(self.data[((y + 1) * self.length + z) * self.width + x] & 15)
+            else:
+                return 15
+        else:
+            return <char>(self.data[(y * self.length + z) * self.width + x] & 15)
 
     cpdef inline char getBlockMetadata(self, int x, int y, int z):
         if x < 0:
@@ -956,14 +957,14 @@ cdef class World:
                 willGrow = xx - x
                 for zz in range(z - leafExt, z + leafExt + 1):
                     zd = zz - z
-                    if abs(willGrow) == leafExt and abs(zd) == leafExt and \
-                       (self.rand.nextInt(2) == 0 or leafExtLeft == 0):
-                        continue
-
-                    self.setBlockWithNotify(xx, yy, zz, blocks.leaves.blockID)
+                    if (abs(willGrow) != leafExt or abs(zd) != leafExt or \
+                        (self.rand.nextInt(2) != 0 and leafExtLeft != 0)) and not \
+                       blocks.opaqueCubeLookup[self.getBlockId(xx, yy, zz)]:
+                        self.setBlockWithNotify(xx, yy, zz, blocks.leaves.blockID)
 
         for i in range(logs):
-            self.setBlockWithNotify(x, y + i, z, blocks.wood.blockID)
+            if not blocks.opaqueCubeLookup[self.getBlockId(x, y + i, z)]:
+                self.setBlockWithNotify(x, y + i, z, blocks.wood.blockID)
 
         return True
 
@@ -1378,23 +1379,31 @@ cdef class World:
 
     def playMusic(self, float x, float y, float z, str name, float _):
         cdef RenderGlobal worldAccess
-        for worldAccess in self.worldAccesses:
-            worldAccess.playMusic(name, x, y, z, 0.0)
+
+        try:
+            for worldAccess in self.worldAccesses:
+                worldAccess.playMusic(name, x, y, z, 0.0)
+        except Exception as e:
+            print(e)
 
     def playSoundAtPlayer(self, float x, float y, float z, str name,
                           float volume, float pitch):
         cdef float d, xd, yd, zd
         cdef RenderGlobal worldAccess
-        for worldAccess in self.worldAccesses:
-            d = 16.0
-            if volume > 1.0:
-                d = 16.0 * volume
 
-            xd = x - self.playerEntity.posX
-            yd = y - self.playerEntity.posY
-            zd = z - self.playerEntity.posZ
-            if xd * xd + yd * yd + zd * zd < d * d:
-                worldAccess.playSound(name, x, y, z, volume, pitch)
+        try:
+            for worldAccess in self.worldAccesses:
+                d = 16.0
+                if volume > 1.0:
+                    d = 16.0 * volume
+
+                xd = x - self.playerEntity.posX
+                yd = y - self.playerEntity.posY
+                zd = z - self.playerEntity.posZ
+                if xd * xd + yd * yd + zd * zd < d * d:
+                    worldAccess.playSound(name, x, y, z, volume, pitch)
+        except Exception as e:
+            print(e)
 
     def extinguishFire(self, int x, int y, int z, int sideHit):
         if sideHit == 0:
@@ -1445,16 +1454,16 @@ cdef class World:
 
     def getBlocks(self):
         cdef int i
-        blocks = bytearray(self.__size)
-        for i in range(self.__size):
+        blocks = bytearray(self.blocksSize)
+        for i in range(self.blocksSize):
             blocks[i] = self.blocks[i]
 
         return blocks
 
     def getData(self):
         cdef int i
-        data = bytearray(self.__size)
-        for i in range(self.__size):
+        data = bytearray(self.blocksSize)
+        for i in range(self.blocksSize):
             data[i] = self.data[i]
 
         return data

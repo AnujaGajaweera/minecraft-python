@@ -78,7 +78,7 @@ cdef class World:
         public int difficultySetting
         int __timeCycle
 
-        int __size
+        public int blocksSize
 
         short[1048576] __floodFillCounters
         int[1048576] __coords
@@ -89,8 +89,7 @@ cdef class World:
         bint[256] __isBlockNormal
         bint[256] __isTickOnLoad
 
-    cdef __findSpawn(self)
-    cdef __calculateLighting(self)
+    cdef findSpawn(self)
     cpdef swap(self, int x0, int y0, int z0, int x1, int y1, int z1)
     cpdef bint setBlock(self, int x, int y, int z, int blockType)
     cpdef bint setBlockWithNotify(self, int x, int y, int z, int blockType)
