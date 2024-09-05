@@ -27,45 +27,45 @@ class LevelLoader:
             self.__guiLoading.displayLoadingString('Reading..')
 
         levelTag = LoadingScreenRenderer.writeLevelTags(file)
-        aboutTag = levelTag['About']
-        mapTag = levelTag['Map']
-        environmentTag = levelTag['Environment']
-        entityTag = levelTag['Entities']
-        width = mapTag['Width'].real
-        length = mapTag['Length'].real
-        height = mapTag['Height'].real
+        aboutTag = levelTag.get('About', Compound({}))
+        mapTag = levelTag.get('Map', Compound({}))
+        environmentTag = levelTag.get('Environment', Compound({}))
+        entityTag = levelTag.get('Entities', List[Compound]())
+        width = mapTag.get('Width', Short(0)).real
+        length = mapTag.get('Length', Short(0)).real
+        height = mapTag.get('Height', Short(0)).real
         world = World()
         if self.__guiLoading:
             self.__guiLoading.displayLoadingString('Preparing level..')
 
-        spawnTag = mapTag['Spawn']
+        spawnTag = mapTag.get('Spawn', List[Short]([Short(0), Short(0), Short(0)]))
         world.xSpawn = spawnTag[0].real
         world.ySpawn = spawnTag[1].real
         world.zSpawn = spawnTag[2].real
-        world.authorName = str(aboutTag['Author'])
-        world.name = str(aboutTag['Name'])
-        world.createTime = aboutTag['CreatedOn'].real
-        world.cloudColor = environmentTag['CloudColor'].real
-        world.skyColor = environmentTag['SkyColor'].real
-        world.fogColor = environmentTag['FogColor'].real
-        world.skyBrightness = max(environmentTag['SkyBrightness'].real, 0)
+        world.authorName = str(aboutTag.get('Author', ''))
+        world.name = str(aboutTag.get('Name', ''))
+        world.createTime = aboutTag.get('CreatedOn', Long(0)).real
+        world.cloudColor = environmentTag.get('CloudColor', Int(0)).real
+        world.skyColor = environmentTag.get('SkyColor', Int(0)).real
+        world.fogColor = environmentTag.get('FogColor', Int(0)).real
+        world.skyBrightness = max(environmentTag.get('SkyBrightness', Byte(0)).real, 0)
         if world.skyBrightness > 16:
             world.skyBrightness = world.skyBrightness * 15 // 100
 
-        world.cloudHeight = environmentTag['CloudHeight'].real
-        world.groundLevel = environmentTag['SurroundingGroundHeight'].real
-        world.waterLevel = environmentTag['SurroundingWaterHeight'].real
-        world.defaultFluid = environmentTag['SurroundingWaterType'].real
-        world.worldTime = environmentTag['TimeOfDay'].real
+        world.cloudHeight = environmentTag.get('CloudHeight', Short(0)).real
+        world.groundLevel = environmentTag.get('SurroundingGroundHeight', Short(0)).real
+        world.waterLevel = environmentTag.get('SurroundingWaterHeight', Short(0)).real
+        world.defaultFluid = environmentTag.get('SurroundingWaterType', Byte(0)).real
+        world.worldTime = environmentTag.get('TimeOfDay', Short(0)).real
         world.skylightSubtracted = world.getSkyBrightness()
-        world.loadWorld(width, height, length, bytearray(mapTag['Blocks']),
-                        bytearray(mapTag['Data']))
+        world.generate(width, height, length, bytearray(mapTag['Blocks']),
+                       bytearray(mapTag['Data']))
         if self.__guiLoading:
             self.__guiLoading.displayLoadingString('Preparing entities..')
 
         for compound in entityTag:
             try:
-                entityType = str(compound['id'])
+                entityType = str(compound.get('id', ''))
                 entity = self._loadEntity(world, entityType)
                 if entity:
                     entity.readFromNBT(compound)
@@ -76,11 +76,11 @@ class LevelLoader:
                 print('Error reading entity')
                 print(traceback.format_exc())
 
-        tileTag = levelTag['TileEntities']
+        tileTag = levelTag.get('TileEntities', List[Compound]())
         for compound in tileTag:
             try:
-                pos = compound['Pos'].real
-                entityType = str(compound['id'])
+                pos = compound.get('Pos', Int(0)).real
+                entityType = str(compound.get('id', ''))
                 chest = TileEntityChest() if entityType == 'Chest' else None
                 if chest:
                     chest.readFromNBT(compound)

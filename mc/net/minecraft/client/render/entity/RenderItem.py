@@ -147,7 +147,7 @@ class RenderItem(Render):
                     z = (self.__random.nextFloat() * 2.0 - 1.0) * 0.3
                     gl.glTranslatef(x, y, z)
 
-                gl.glRotatef(-self._renderManager.playerViewY, 0.0, 1.0, 0.0)
+                gl.glRotatef(180.0 - self._renderManager.playerViewY, 0.0, 1.0, 0.0)
                 t.startDrawingQuads()
                 t.setNormal(0.0, 1.0, 0.0)
                 t.addVertexWithUV(-0.5, -0.25, 0.0, u0, v1)

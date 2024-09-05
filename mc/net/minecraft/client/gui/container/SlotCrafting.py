@@ -6,7 +6,7 @@ class SlotCrafting(Slot):
         super().__init__(guiHandler, craftResult, 0, xPos, yPos)
         self.__craftMatrix = inventory
 
-    def isItemValid(self):
+    def isItemValid(self, stack):
         return False
 
     def onPickupFromSlot(self):

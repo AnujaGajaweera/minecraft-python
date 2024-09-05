@@ -20,7 +20,10 @@ class EntitySpider(EntityMob):
         return None
 
     def _attackEntity(self, entity, distance):
-        if distance > 2.0 and distance < 6.0 and self._rand.nextInt(10) == 0:
+        br = self.getBrightness(1.0)
+        if br > 0.5 and self._rand.nextInt(100) == 0:
+            self._playerToAttack = None
+        elif distance > 2.0 and distance < 6.0 and self._rand.nextInt(10) == 0:
             if self.onGround:
                 xd = entity.posX - self.posX
                 zd = entity.posZ - self.posZ

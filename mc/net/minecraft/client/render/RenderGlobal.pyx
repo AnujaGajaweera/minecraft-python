@@ -193,8 +193,9 @@ cdef class RenderGlobal:
                     if visible:
                         for entity in entities:
                             if entity.shouldRender(vec) and \
-                               frustum.isVisible(entity.boundingBox):
-                                if entity != self.__worldObj.playerEntity:
+                               frustum.isVisible(entity.boundingBox) and \
+                               (entity != self.__worldObj.playerEntity or \
+                                self.__mc.options.thirdPersonView):
                                     self.__countEntitiesRendered += 1
                                     RenderManager.instance.renderEntity(entity, a)
                     else:

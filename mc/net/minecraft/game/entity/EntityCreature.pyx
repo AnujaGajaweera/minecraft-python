@@ -82,7 +82,7 @@ cdef class EntityCreature(EntityLiving):
 
         isInWater = self.handleWaterMovement()
         isInLava = self.handleLavaMovement()
-        if self.__pathToEntity:
+        if self.__pathToEntity and self._rand.nextInt(100) != 0:
             posVec = self.__pathToEntity.getPosition(self)
             w = self.width * 2.0
             while posVec:
@@ -111,9 +111,12 @@ cdef class EntityCreature(EntityLiving):
                 self._moveForward = self._moveSpeed
                 if yd > 0.0:
                     self._isJumping = True
+
+            if self._rand.nextFloat() < 0.8 and (isInWater or isInLava):
+                self._isJumping = True
         else:
-            if isInWater or isInLava:
-                self._isJumping = self._rand.nextFloat() < 0.8
+            super()._updatePlayerActionState()
+            self.__pathToEntity = None
 
     def _attackEntity(self, Entity entity, float distance):
         pass

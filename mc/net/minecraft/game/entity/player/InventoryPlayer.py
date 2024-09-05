@@ -1,13 +1,16 @@
 from mc.net.minecraft.game.level.block.Blocks import blocks
+from mc.net.minecraft.game.item.ItemArmor import ItemArmor
 from mc.net.minecraft.game.item.ItemStack import ItemStack
 from mc.net.minecraft.game.Inventory import Inventory
 
 class InventoryPlayer(Inventory):
     PLAYER_STACK_LIMIT = 64
 
-    def __init__(self):
+    def __init__(self, player):
+        self.__player = player
         self.currentItem = 0
-        self.mainInventory = [None] * 40
+        self.mainInventory = [None] * 36
+        self.armorInventory = [None] * 4
 
     def getCurrentItem(self):
         return self.mainInventory[self.currentItem]
@@ -117,31 +120,63 @@ class InventoryPlayer(Inventory):
             return False
 
     def decrStackSize(self, slot, size):
-        if not self.mainInventory[slot]:
+        inv = self.mainInventory
+        if slot >= len(self.mainInventory):
+            inv = self.armorInventory
+            slot -= len(self.mainInventory)
+
+        if not inv[slot]:
             return None
 
-        if self.mainInventory[slot].stackSize <= size:
-            stack = self.mainInventory[slot]
-            self.mainInventory[slot] = None
+        if inv[slot].stackSize <= size:
+            stack = inv[slot]
+            inv[slot] = None
             return stack
         else:
-            stack = self.mainInventory[slot].splitStack(size)
-            if self.mainInventory[slot].stackSize == 0:
-                self.mainInventory[slot] = None
+            stack = inv[slot].splitStack(size)
+            if inv[slot].stackSize == 0:
+                inv[slot] = None
 
             return stack
 
     def setInventorySlotContents(self, slot, stack):
-        self.mainInventory[slot] = stack
+        inv = self.mainInventory
+        if slot >= len(self.mainInventory):
+            inv = self.armorInventory
+            slot -= len(self.mainInventory)
+
+        inv[slot] = stack
 
     def getSizeInventory(self):
-        return len(self.mainInventory)
+        return len(self.mainInventory) + 4
 
     def getStackInSlot(self, slot):
-        return self.mainInventory[slot]
+        inv = self.mainInventory
+        if slot >= len(self.mainInventory):
+            inv = self.armorInventory
+            slot -= len(self.mainInventory)
+
+        return inv[slot]
 
     def getInvName(self):
         return 'Inventory'
 
     def getInventoryStackLimit(self):
         return InventoryPlayer.PLAYER_STACK_LIMIT
+
+    def getPlayerArmorValue(self):
+        damageReduceCount = 0
+        damageCount = 0
+        maxDamageCount = 0
+        for slot in self.armorInventory:
+            if slot and isinstance(slot.getItem(), ItemArmor):
+                maxDamage = slot.isItemStackDamageable()
+                damage = maxDamage - slot.itemDamage
+                damageCount += damage
+                maxDamageCount += maxDamage
+                damageReduceCount += slot.getItem().damageReduceAmount
+
+        if maxDamageCount == 0:
+            return 0
+        else:
+            return (damageReduceCount - 1) * damageCount // maxDamageCount + 1

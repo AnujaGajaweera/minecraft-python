@@ -129,9 +129,9 @@ class EntityItem(Entity):
         compound['Item'] = self.item.writeToNBT(Compound({}))
 
     def _readEntityFromNBT(self, compound):
-        self.__health = compound['Health'].real & 255
-        self.age = compound['Age'].real
-        self.item = ItemStack(compound['Item'])
+        self.__health = compound.get('Health', Short(5)).real & 255
+        self.age = compound.get('Age', Short(0)).real
+        self.item = ItemStack(compound.get('Item', Compound({})))
 
     def _getEntityString(self):
         return 'Item'

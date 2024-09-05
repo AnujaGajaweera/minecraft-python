@@ -5,7 +5,7 @@ from mc.net.minecraft.game.entity.Entity cimport Entity
 cdef class EntityLiving(Entity):
 
     cdef:
-        int __heartsHalvesLife
+        public int heartsHalvesLife
         public float renderYawOffset
         public float prevRenderYawOffset
         float __prevRotationYawHead

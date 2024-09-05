@@ -1,4 +1,5 @@
 from mc.net.minecraft.client.render.entity.RenderItem import RenderItem
+from mc.net.minecraft.client.render.RenderEngine import RenderEngine
 from mc.net.minecraft.client.gui.GuiScreen import GuiScreen
 from mc.net.minecraft.client.RenderHelper import RenderHelper
 from pyglet import window, gl
@@ -28,14 +29,31 @@ class GuiContainer(GuiScreen):
 
         for slot in self._inventorySlots:
             stack = slot.inventory.getStackInSlot(slot.slotIndex)
-            self.__itemRenderer.renderItemIntoGUI(
-                self.mc.renderEngine, stack,
-                slot.xDisplayPosition, slot.yDisplayPosition
-            )
-            self.__itemRenderer.renderItemOverlayIntoGUI(
-                self._fontRenderer, stack,
-                slot.xDisplayPosition, slot.yDisplayPosition
-            )
+            render = True
+            if not stack:
+                iconIndex = slot.getBackgroundIconIndex()
+                if iconIndex >= 0:
+                    gl.glDisable(gl.GL_LIGHTING)
+                    RenderEngine.bindTexture(
+                        self.mc.renderEngine.getTexture('gui/items.png')
+                    )
+                    self.drawTexturedModalRect(slot.xDisplayPosition,
+                                               slot.yDisplayPosition,
+                                               iconIndex % 16 << 4,
+                                               iconIndex // 16 << 4, 16, 16)
+                    gl.glEnable(gl.GL_LIGHTING)
+                    render = False
+
+            if render:
+                self.__itemRenderer.renderItemIntoGUI(
+                    self.mc.renderEngine, stack,
+                    slot.xDisplayPosition, slot.yDisplayPosition
+                )
+                self.__itemRenderer.renderItemOverlayIntoGUI(
+                    self._fontRenderer, stack,
+                    slot.xDisplayPosition, slot.yDisplayPosition
+                )
+
             if slot.getIsMouseOverSlot(xm, ym):
                 gl.glDisable(gl.GL_LIGHTING)
                 gl.glDisable(gl.GL_DEPTH_TEST)
@@ -97,7 +115,7 @@ class GuiContainer(GuiScreen):
                     slot.putStack(None)
 
                 slot.onPickupFromSlot()
-            elif not stack and self.__itemStack and slot.isItemValid():
+            elif not stack and self.__itemStack and slot.isItemValid(self.__itemStack):
                 size = self.__itemStack.stackSize if button == window.mouse.LEFT else 1
                 size = min(size, slot.inventory.getInventoryStackLimit())
                 slot.putStack(self.__itemStack.splitStack(size))
@@ -107,7 +125,7 @@ class GuiContainer(GuiScreen):
                 if not stack or not self.__itemStack:
                     return
 
-                if not slot.isItemValid():
+                if not slot.isItemValid(self.__itemStack):
                     if stack.itemID == self.__itemStack.itemID:
                         if self.__itemStack.getItem().getItemStackLimit() > 1:
                             if stack.stackSize > 0:

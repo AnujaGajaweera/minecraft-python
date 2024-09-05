@@ -216,7 +216,9 @@ cdef class Entity:
         zaOrg = z
 
         aabbOrg = self.boundingBox.copy()
-        aABBs = self._worldObj.getCollidingBoundingBoxes(self.boundingBox.addCoord(x, y, z))
+        aABBs = self._worldObj.getCollidingBoundingBoxes(
+            self.boundingBox.addCoord(x, y, z)
+        )
         for aABB in aABBs:
             y = aABB.calculateYOffset(self.boundingBox, y)
 
@@ -245,7 +247,8 @@ cdef class Entity:
             y = 0.0
             x = 0.0
 
-        if self.stepHeight > 0.0 and onGround and self.__ySize < 0.05 and (xaOrg != x or zaOrg != z):
+        if self.stepHeight > 0.0 and onGround and self.__ySize < 0.05 and \
+           (xaOrg != x or zaOrg != z):
             xo = x
             yo = y
             zo = z
@@ -254,7 +257,9 @@ cdef class Entity:
             z = zaOrg
             aabb = self.boundingBox.copy()
             self.boundingBox = aabbOrg.copy()
-            aABBs = self._worldObj.getCollidingBoundingBoxes(self.boundingBox.addCoord(xaOrg, y, zaOrg))
+            aABBs = self._worldObj.getCollidingBoundingBoxes(
+                self.boundingBox.addCoord(xaOrg, y, zaOrg)
+            )
             for aABB in aABBs:
                 y = aABB.calculateYOffset(self.boundingBox, y)
 
@@ -311,7 +316,8 @@ cdef class Entity:
 
         xd = self.posX - xOrg
         zd = self.posZ - zOrg
-        self.distanceWalkedModified = <float>(self.distanceWalkedModified + sqrt(xd * xd + zd * zd) * 0.6)
+        self.distanceWalkedModified = <float>(self.distanceWalkedModified + \
+                                              sqrt(xd * xd + zd * zd) * 0.6)
         if self._canTriggerWalking:
             walkX = <int>self.posX
             walkY = <int>(self.posY - 0.2 - self.yOffset)
@@ -320,9 +326,12 @@ cdef class Entity:
             if self.distanceWalkedModified > self.__nextStepDistance and block > 0:
                 self.__nextStepDistance += 1
                 sound = blocks.blocksList[block].stepSound
-                self._worldObj.playSoundAtEntity(self, sound.stepSoundDirStep(),
-                                                 sound.soundVolume * 0.15, sound.soundPitch)
-                blocks.blocksList[block].onEntityWalking(self._worldObj, walkX, walkY, walkZ)
+                if not blocks.blocksList[block].material.getIsLiquid():
+                    self._worldObj.playSoundAtEntity(self, sound.stepSoundDirStep(),
+                                                     sound.soundVolume * 0.15,
+                                                     sound.soundPitch)
+                blocks.blocksList[block].onEntityWalking(self._worldObj, walkX,
+                                                         walkY, walkZ)
 
         self.__ySize *= 0.4
         inWater = self.handleWaterMovement()
@@ -349,8 +358,9 @@ cdef class Entity:
         pass
 
     cpdef bint handleWaterMovement(self):
-        return self._worldObj.handleMaterialAcceleration(self.boundingBox.expand(0.0, -0.4, 0.0),
-                                                         Material.water)
+        return self._worldObj.handleMaterialAcceleration(
+            self.boundingBox.expand(0.0, -0.4, 0.0), Material.water
+        )
 
     def isInsideOfMaterial(self):
         block = self._worldObj.getBlockId(<int>self.posX,
@@ -365,8 +375,9 @@ cdef class Entity:
         return 0.0
 
     cdef bint handleLavaMovement(self):
-        return self._worldObj.handleMaterialAcceleration(self.boundingBox.expand(0.0, -0.4, 0.0),
-                                                         Material.lava)
+        return self._worldObj.handleMaterialAcceleration(
+            self.boundingBox.expand(0.0, -0.4, 0.0), Material.lava
+        )
 
     cpdef moveFlying(self, float xa, float za, float speed):
         cdef float dist, si, co
@@ -463,17 +474,19 @@ cdef class Entity:
         if not self.isDead and self._getEntityString():
             compound['id'] = String(self._getEntityString())
             compound['Pos'] = self.__newDoubleNBTList([self.posX, self.posY, self.posZ])
-            compound['Motion'] = self.__newDoubleNBTList([self.motionX, self.motionY, self.motionZ])
-            compound['Rotation'] = self.__newDoubleNBTList([self.rotationYaw, self.rotationPitch])
+            compound['Motion'] = self.__newDoubleNBTList([self.motionX, self.motionY,
+                                                          self.motionZ])
+            compound['Rotation'] = self.__newDoubleNBTList([self.rotationYaw,
+                                                            self.rotationPitch])
             compound['FallDistance'] = Float(self.__fallDistance)
             compound['Fire'] = Short(self.fire)
             compound['Air'] = Short(self.air)
             self._writeEntityToNBT(compound)
 
     def readFromNBT(self, compound):
-        pos = compound['Pos']
-        motion = compound['Motion']
-        rot = compound['Rotation']
+        pos = compound.get('Pos', List[Float]([0.0, 0.0, 0.0]))
+        motion = compound.get('Motion', List[Float]([0.0, 0.0, 0.0]))
+        rot = compound.get('Rotation', List[Float]([0.0, 0.0]))
         self.posX = pos[0].real
         self.posY = pos[1].real
         self.posZ = pos[2].real
@@ -482,9 +495,9 @@ cdef class Entity:
         self.motionZ = motion[2].real
         self.rotationYaw = rot[0].real
         self.rotationPitch = rot[1].real
-        self.__fallDistance = compound['FallDistance'].real
-        self.fire = compound['Fire'].real
-        self.air = compound['Air'].real
+        self.__fallDistance = compound.get('FallDistance', Float(0.0)).real
+        self.fire = compound.get('Fire', Short(0)).real
+        self.air = compound.get('Air', Short(Entity.TOTAL_AIR_SUPPLY)).real
         self.setPositionAndRotation(self.posX, self.posY, self.posZ,
                                     self.rotationYaw, self.rotationPitch)
         self._readEntityFromNBT(compound)

@@ -24,6 +24,7 @@ class EntityPlayerSP(EntityPlayer):
         super().onLivingUpdate()
 
     def _writeEntityToNBT(self, compound):
+        super()._writeEntityToNBT(compound)
         compound['Score'] = Int(self._getScore)
         invList = List[Compound]()
         for slot in range(len(self.inventory.mainInventory)):
@@ -31,17 +32,26 @@ class EntityPlayerSP(EntityPlayer):
                 comp = Compound({'Slot': Byte(slot)})
                 self.inventory.mainInventory[slot].writeToNBT(comp)
                 invList.append(comp)
+        for slot in range(len(self.inventory.armorInventory)):
+            if self.inventory.armorInventory[slot]:
+                comp = Compound({'Slot': Byte(slot + 100)})
+                self.inventory.armorInventory[slot].writeToNBT(comp)
+                invList.append(comp)
 
         compound['Inventory'] = invList
 
     def _readEntityFromNBT(self, compound):
-        self._getScore = compound['Score'].real
-        invList = compound['Inventory']
-        self.inventory.mainInventory = [None] * self.inventory.getSizeInventory()
+        super()._readEntityFromNBT(compound)
+        self._getScore = compound.get('Score', Int(0)).real
+        invList = compound.get('Inventory', List[Compound]())
+        self.inventory.mainInventory = [None] * 36
+        self.inventory.armorInventory = [None] * 4
         for comp in invList:
-            slot = comp['Slot'].real & 255
+            slot = comp.get('Slot', Byte(0)).real & 255
             if slot >= 0 and slot < len(self.inventory.mainInventory):
                 self.inventory.mainInventory[slot] = ItemStack(comp)
+            if slot >= 100 and slot < len(self.inventory.armorInventory) + 100:
+                self.inventory.armorInventory[slot - 100] = ItemStack(comp)
 
     def _getEntityString(self):
         return 'LocalPlayer'

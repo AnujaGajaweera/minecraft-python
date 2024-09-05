@@ -253,7 +253,7 @@ class Minecraft(window.Window):
                 elif symbol == window.key.F7:
                     self.entityRenderer.grabLargeScreenshot()
                 elif symbol == window.key.F5:
-                    self.renderRain = not self.renderRain
+                    self.options.thirdPersonView = not self.options.thirdPersonView
                 elif symbol == self.options.keyBindInventory.keyCode:
                     self.displayGuiScreen(GuiInventory(self.thePlayer.inventory))
                 elif symbol == self.options.keyBindDrop.keyCode:
@@ -429,7 +429,7 @@ class Minecraft(window.Window):
 
         if self.__serverIp and self.session:
             level = World()
-            world.setLevel(8, 8, 8, bytearray(512))
+            world.setLevel(8, 8, 8, bytearray(512), bytearray(512))
             self.setLevel(level)
         elif not self.theWorld:
             self.displayGuiScreen(GuiMainMenu())

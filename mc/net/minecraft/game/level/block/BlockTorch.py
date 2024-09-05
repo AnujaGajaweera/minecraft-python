@@ -5,6 +5,7 @@ class BlockTorch(Block):
 
     def __init__(self, blocks, blockId, tex):
         super().__init__(blocks, 50, 80, Material.circuits)
+        self._setTickOnLoad(True)
 
     def getCollisionBoundingBoxFromPool(self, x, y, z):
         return None
@@ -45,6 +46,11 @@ class BlockTorch(Block):
 
         world.setBlockMetadata(x, y, z, blockMeta)
 
+    def updateTick(self, world, x, y, z, random):
+        super().updateTick(world, x, y, z, random)
+        if world.getBlockMetadata(x, y, z) == 0:
+            self.onBlockAdded(world, x, y, z)
+
     def onBlockAdded(self, world, x, y, z):
         if world.isBlockNormalCube(x - 1, y, z):
             world.setBlockMetadata(x, y, z, 1)
@@ -73,7 +79,7 @@ class BlockTorch(Block):
             drop = True
         elif not world.isBlockNormalCube(x, y, z + 1) and metadata == 4:
             drop = True
-        elif not world.isBlockNormalCube(x, y - 1, z + 1) and metadata == 5:
+        elif not world.isBlockNormalCube(x, y - 1, z) and metadata == 5:
             drop = True
 
         if drop:

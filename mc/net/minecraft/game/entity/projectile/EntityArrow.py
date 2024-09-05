@@ -21,14 +21,14 @@ class EntityArrow(Entity):
         self.setSize(0.5, 0.5)
         self.setPositionAndRotation(entity.posX, entity.posY, entity.posZ,
                                     entity.rotationYaw, entity.rotationPitch)
-        self.posX += math.cos(self.rotationYaw / 180.0 * math.pi) * 0.16
+        self.posX -= math.cos(self.rotationYaw / 180.0 * math.pi) * 0.16
         self.posY -= 0.1
-        self.posZ += math.sin(self.rotationYaw / 180.0 * math.pi) * 0.16
+        self.posZ -= math.sin(self.rotationYaw / 180.0 * math.pi) * 0.16
         self.setPosition(self.posX, self.posY, self.posZ)
         self.yOffset = 0.0
-        self.motionX = math.sin(self.rotationYaw / 180.0 * math.pi) * \
+        self.motionX = -math.sin(self.rotationYaw / 180.0 * math.pi) * \
                        math.cos(self.rotationPitch / 180.0 * math.pi)
-        self.motionZ = -math.cos(self.rotationYaw / 180.0 * math.pi) * \
+        self.motionZ = math.cos(self.rotationYaw / 180.0 * math.pi) * \
                        math.cos(self.rotationPitch / 180.0 * math.pi)
         self.motionY = -math.sin(self.rotationPitch / 180.0 * math.pi)
         self.setArrowHeading(self.motionX, self.motionY, self.motionZ, 1.5, 1.0)
@@ -189,12 +189,12 @@ class EntityArrow(Entity):
         compound['inGround'] = Byte(1 if self.__inGround else 0)
 
     def _readEntityFromNBT(self, compound):
-        self.__xTile = compound['xTile'].real
-        self.__yTile = compound['yTile'].real
-        self.__zTile = compound['zTile'].real
-        self.__inTile = compound['inTile'].real & 255
-        self.arrowShake = compound['shake'].real & 255
-        self.__inGround = compound['inGround'].real == 1
+        self.__xTile = compound.get('xTile', Short(-1)).real
+        self.__yTile = compound.get('yTile', Short(-1)).real
+        self.__zTile = compound.get('zTile', Short(-1)).real
+        self.__inTile = compound.get('inTile', Byte(0)).real & 255
+        self.arrowShake = compound.get('shake', Byte(0)).real & 255
+        self.__inGround = compound.get('inGround', Byte(False)).real == 1
 
     def _getEntityString(self):
         return 'Arrow'

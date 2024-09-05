@@ -25,8 +25,8 @@ from mc.net.minecraft.game.level.block.BlockStone import BlockStone
 from mc.net.minecraft.game.level.block.BlockTNT import BlockTNT
 from mc.net.minecraft.game.level.block.BlockSapling import BlockSapling
 from mc.net.minecraft.game.level.block.BlockSource import BlockSource
-from mc.net.minecraft.game.level.block.StepSoundGravel import StepSoundGravel
 from mc.net.minecraft.game.level.block.StepSoundGlass import StepSoundGlass
+from mc.net.minecraft.game.level.block.StepSoundSand import StepSoundSand
 from mc.net.minecraft.game.level.block.StepSound import StepSound
 from mc.net.minecraft.game.level.material.Material import Material
 
@@ -49,7 +49,7 @@ class Blocks:
         self.soundMetalFootstep = StepSound('stone', 1.0, 1.5)
         self.soundGlassFootstep = StepSoundGlass('stone', 1.0, 1.0)
         self.soundClothFootstep = StepSound('cloth', 1.0, 1.0)
-        self.soundSandFootstep = StepSoundGravel('sand', 1.0, 1.0)
+        self.soundSandFootstep = StepSoundSand('sand', 1.0, 1.0)
 
         self.stone = BlockStone(self, 1, 1).setHardness(1.5).setResistance(10.0)
         self.stone.stepSound = self.soundStoneFootstep
@@ -68,8 +68,8 @@ class Blocks:
         self.bedrock = Block(self, 7, 17, Material.rock).setHardness(-1.0).setResistance(6000000.0)
         self.bedrock.stepSound = self.soundStoneFootstep
 
-        self.waterMoving = BlockFlowing(self, 8, Material.water).setHardness(100.0).setLightOpacity(4)
-        self.waterStill = BlockStationary(self, 9, Material.water).setHardness(100.0).setLightOpacity(2)
+        self.waterMoving = BlockFlowing(self, 8, Material.water).setHardness(100.0).setLightOpacity(3)
+        self.waterStill = BlockStationary(self, 9, Material.water).setHardness(100.0).setLightOpacity(3)
 
         self.lavaMoving = BlockFlowing(self, 10, Material.lava).setHardness(0.0).setLightValue(1.0).setLightOpacity(255)
         self.lavaStill = BlockStationary(self, 11, Material.lava).setHardness(100.0).setLightValue(1.0).setLightOpacity(255)

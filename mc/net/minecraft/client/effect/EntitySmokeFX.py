@@ -32,8 +32,8 @@ class EntitySmokeFX(EntityFX):
         if self._particleAge - 1 >= self._particleMaxAge:
             self.setEntityDead()
 
-        self._particleTextureIndex = 7 - (self._particleAge << 3) // self._particleMaxAge
-        self._motionY1 = float(self._motionY1 + 0.004)
+        self._particleTextureIndex = int(7 - (self._particleAge << 3) / self._particleMaxAge)
+        self._motionY1 = self._motionY1 + 0.004
         self.moveEntity(self._motionX1, self._motionY1, self._motionZ1)
         self._motionX1 *= 0.96
         self._motionY1 *= 0.96

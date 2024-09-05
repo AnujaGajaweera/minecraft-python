@@ -72,7 +72,7 @@ cdef class World:
 
         public Pathfinder pathFinder
 
-        Light __light
+        Light __lightUpdates
 
         public int worldTime
         public int difficultySetting

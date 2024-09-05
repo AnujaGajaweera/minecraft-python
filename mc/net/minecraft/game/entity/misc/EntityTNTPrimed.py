@@ -56,7 +56,7 @@ class EntityTNTPrimed(Entity):
         compound['Fuse'] = Byte(self.fuse)
 
     def _readEntityFromNBT(self, compound):
-        self.fuse = compound['Fuse'].real
+        self.fuse = compound.get('Fuse', Byte(80)).real
 
     def _getEntityString(self):
         return 'PrimedTnt'

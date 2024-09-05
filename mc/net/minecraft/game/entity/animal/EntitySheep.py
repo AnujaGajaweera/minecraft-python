@@ -32,7 +32,7 @@ class EntitySheep(EntityAnimal):
 
     def _readEntityFromNBT(self, compound):
         super()._readEntityFromNBT(compound)
-        self.sheared = bool(compound['Sheared'].real)
+        self.sheared = bool(compound.get('Sheared', Byte(False)).real)
 
     def _getEntityString(self):
         return 'Sheep'

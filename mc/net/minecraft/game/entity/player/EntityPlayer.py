@@ -4,6 +4,7 @@ from mc.net.minecraft.game.entity.misc.EntityItem import EntityItem
 from mc.net.minecraft.game.entity.monster.EntityMob import EntityMob
 from mc.net.minecraft.game.entity.projectile.EntityArrow import EntityArrow
 from mc.net.minecraft.game.item.Items import items
+from mc.net.minecraft.game.item.ItemArmor import ItemArmor
 from mc.net.minecraft.game.item.ItemStack import ItemStack
 from mc.net.minecraft.game.level.block.Blocks import blocks
 from mc.net.minecraft.game.level.material.Material import Material
@@ -21,13 +22,15 @@ class EntityPlayer(EntityLiving):
             world.playerEntity = self
             world.releaseEntitySkin(self)
 
-        self.setPositionAndRotation(world.xSpawn, world.ySpawn, world.zSpawn, 0.0, 0.0)
+        self.setPositionAndRotation(world.xSpawn, world.ySpawn, world.zSpawn,
+                                    0.0, 0.0)
         self.userType = 0
         self._getScore = 0
         self.prevCameraYaw = 0.0
         self.cameraYaw = 0.0
+        self.damageRemainder = 0
         self.yOffset = 1.62
-        self.inventory = InventoryPlayer()
+        self.inventory = InventoryPlayer(self)
         self.health = EntityPlayer.MAX_HEALTH
         self.fireResistance = EntityPlayer.FIRE_RESISTANCE
         self._texture = 'char.png'
@@ -63,7 +66,9 @@ class EntityPlayer(EntityLiving):
 
         self.cameraYaw += (d - self.cameraYaw) * 0.4
         self.cameraPitch += (t - self.cameraPitch) * 0.8
-        entities = self._worldObj.getEntitiesWithinAABBExcludingEntity(self, self.boundingBox.expand(1.0, 0.0, 1.0))
+        entities = self._worldObj.getEntitiesWithinAABBExcludingEntity(
+            self, self.boundingBox.expand(1.0, 0.0, 1.0)
+        )
         if self.health > 0 and entities:
             for entity in entities:
                 entity.onCollideWithPlayer(self)
@@ -76,8 +81,10 @@ class EntityPlayer(EntityLiving):
         self.setPosition(self.posX, self.posY, self.posZ)
         self.motionY = 0.1
         if entity:
-            self.motionX = -(math.cos((self.attackedAtYaw + self.rotationYaw) * math.pi / 180.0)) * 0.1
-            self.motionZ = -(math.sin((self.attackedAtYaw + self.rotationYaw) * math.pi / 180.0)) * 0.1
+            self.motionX = -(math.cos((self.attackedAtYaw + self.rotationYaw) * \
+                                      math.pi / 180.0)) * 0.1
+            self.motionZ = -(math.sin((self.attackedAtYaw + self.rotationYaw) * \
+                                      math.pi / 180.0)) * 0.1
         else:
             self.motionX = self.motionZ = 0.0
 
@@ -96,9 +103,9 @@ class EntityPlayer(EntityLiving):
         item = EntityItem(self._worldObj, self.posX, self.posY - 0.3,
                           self.posZ, stack)
         item.delayBeforeCanPickup = 40
-        item.motionX = math.sin(self.rotationYaw / 180.0 * math.pi) * \
+        item.motionX = -math.sin(self.rotationYaw / 180.0 * math.pi) * \
                        math.cos(self.rotationPitch / 180.0 * math.pi) * 0.3
-        item.motionZ = -math.cos(self.rotationYaw / 180.0 * math.pi) * \
+        item.motionZ = math.cos(self.rotationYaw / 180.0 * math.pi) * \
                        math.cos(self.rotationPitch / 180.0 * math.pi) * 0.3
         item.motionY = -math.sin(self.rotationPitch / 180.0 * math.pi) * 0.3 + 0.1
         angle = self._rand.nextFloat() * math.pi * 2.0
@@ -123,12 +130,18 @@ class EntityPlayer(EntityLiving):
     def canHarvestBlock(self, block):
         if block.material != Material.rock and block.material != Material.iron:
             return True
+
+        stack = self.inventory.getStackInSlot(self.inventory.currentItem)
+        if stack:
+            return items.itemsList[stack.itemID].canHarvestBlock(block)
         else:
-            stack = self.inventory.getStackInSlot(self.inventory.currentItem)
-            return items.itemsList[stack.itemID].canHarvestBlock(block) if stack else False
+            return False
+
+    def _readEntityFromNBT(self, compound):
+        super()._readEntityFromNBT(compound)
 
     def _writeEntityToNBT(self, compound):
-        pass
+        super()._writeEntityToNBT(compound)
 
     def _getEntityString(self):
         return ''
@@ -146,6 +159,15 @@ class EntityPlayer(EntityLiving):
         return 0.12
 
     def attackEntityFrom(self, entity, damage):
+        if not self._worldObj.survivalWorld:
+            return False
+
+        self._entityAge = 0
+        if self.health <= 0:
+            return False
+        elif self.heartsLife > self.heartsHalvesLife / 2.0:
+            return False
+
         if isinstance(entity, EntityMob) or isinstance(entity, EntityArrow):
             if self._worldObj.difficultySetting == 0:
                 damage = 0
@@ -154,4 +176,18 @@ class EntityPlayer(EntityLiving):
             elif self._worldObj.difficultySetting == 3:
                 damage = damage * 3 // 2
 
-        return super().attackEntityFrom(entity, damage)
+        armorDamage = 25 - self.inventory.getPlayerArmorValue()
+        armorDamage = damage * armorDamage + self.damageRemainder
+        for i in range(len(self.inventory.armorInventory)):
+            slot = self.inventory.armorInventory[i]
+            if slot and isinstance(slot.getItem(), ItemArmor):
+                slot.damageItem(damage)
+                if slot.stackSize == 0:
+                    self.inventory.armorInventory[i] = None
+
+        damage = armorDamage // 25
+        self.damageRemainder = armorDamage % 25
+        if damage == 0:
+            return False
+        else:
+            return super().attackEntityFrom(entity, damage)

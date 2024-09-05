@@ -116,18 +116,26 @@ cdef class Pathfinder:
 
         if point:
             i = 0
-            for y in range(y, 0, -1):
-                offset = self.__getVerticalOffset(x, y - 1, z, sizePoint)
-                if offset <= 0:
-                    break
-                elif offset < 0:
+            while True:
+                if y > 0:
+                    offset = self.__getVerticalOffset(x, y - 1, z, sizePoint)
+                    if offset > 0:
+                        if offset < 0:
+                            return None
+
+                        i += 1
+                        if i >= 4:
+                            return None
+
+                        y -= 1
+                        point = self.__openPoint(x, y, z)
+                        continue
+
+                material = self.__worldMap.getBlockMaterial(x, y - 1, z)
+                if material == Material.water or material == Material.lava:
                     return None
 
-                i += 1
-                if i >= 4:
-                    return None
-
-                point = self.__openPoint(x, y - 1, z)
+                break
 
         return point
 

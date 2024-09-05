@@ -282,7 +282,7 @@ cdef class LevelGenerator:
         world.waterLevel = self.__waterLevel
         world.groundLevel = self.__groundLevel
         self.__guiLoading.displayLoadingString('Assembling..')
-        world.generate(width, height, depth, b)
+        world.generate(width, height, depth, b, None)
         self.__guiLoading.displayLoadingString('Building..')
         world.findSpawn()
         LevelGenerator.__generateHouse(world)
@@ -415,7 +415,7 @@ cdef class LevelGenerator:
                 z = depth
                 for zz in range(20):
                     x += self.__rand.nextInt(12) - self.__rand.nextInt(12)
-                    y += self.__rand.nextInt(3) - self.__rand.nextInt(3)
+                    y += self.__rand.nextInt(3) - self.__rand.nextInt(6)
                     z += self.__rand.nextInt(12) - self.__rand.nextInt(12)
                     if x >= 0 and y >= 0 and z >= 0 and x < self.__width and \
                        y < self.__height and z < self.__depth:

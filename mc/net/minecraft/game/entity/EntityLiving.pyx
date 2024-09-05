@@ -19,7 +19,7 @@ cdef class EntityLiving(Entity):
     def __init__(self, world):
         super().__init__(world)
         self.preventEntitySpawning = True
-        self.__heartsHalvesLife = EntityLiving.HEALTH
+        self.heartsHalvesLife = EntityLiving.HEALTH
         self.renderYawOffset = 0.0
         self.prevRenderYawOffset = 0.0
         self.__prevRotationYawHead = 0.0
@@ -173,7 +173,7 @@ cdef class EntityLiving(Entity):
         if self.health > EntityLiving.HEALTH:
             self.health = EntityLiving.HEALTH
 
-        self.heartsLife = self.__heartsHalvesLife // 2
+        self.heartsLife = self.heartsHalvesLife // 2
 
     def attackEntityFrom(self, Entity entity, int damage):
         cdef float xd, zd, d
@@ -186,14 +186,14 @@ cdef class EntityLiving(Entity):
             return False
 
         self.limbYaw = 1.5
-        if self.heartsLife > self.__heartsHalvesLife // 2.0:
+        if self.heartsLife > self.heartsHalvesLife // 2.0:
             if self.prevHealth - damage >= self.health:
                 return False
 
             self.health = self.prevHealth - damage
         else:
             self.prevHealth = self.health
-            self.heartsLife = self.__heartsHalvesLife
+            self.heartsLife = self.heartsHalvesLife
             self.health -= damage
             self.hurtTime = self.maxHurtTime = 10
 
@@ -316,10 +316,10 @@ cdef class EntityLiving(Entity):
         compound['AttackTime'] = Short(self.attackTime)
 
     def _readEntityFromNBT(self, compound):
-        self.health = compound['Health'].real
-        self.hurtTime = compound['HurtTime'].real
-        self.deathTime = compound['DeathTime'].real
-        self.attackTime = compound['AttackTime'].real
+        self.health = compound.get('Health', Short(10)).real
+        self.hurtTime = compound.get('HurtTime', Short(0)).real
+        self.deathTime = compound.get('DeathTime', Short(0)).real
+        self.attackTime = compound.get('AttackTime', Short(0)).real
 
     def _getEntityString(self):
         return 'Mob'

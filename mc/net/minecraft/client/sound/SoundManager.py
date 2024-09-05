@@ -121,11 +121,11 @@ class SoundManager:
         upX = math.sin(-yaw * (math.pi / 180.0) - math.pi)
         upY = math.cos(-pitch * (math.pi / 180.0))
         upZ = math.cos(-yaw * (math.pi / 180.0) - math.pi)
-        lookX = upX * upY
+        lookX = -upX * upY
         lookY = math.sin(-pitch * (math.pi / 180.0))
-        lookZ = upZ * upY
-        upX *= lookY
-        upZ *= lookY
+        lookZ = -upZ * upY
+        upX = -upX * lookY
+        upZ = -upZ * lookY
         self.listener.position = (x, y, z)
         self.listener.forward_orientation = (lookX, lookY, lookZ)
         self.listener.up_orientation = (upX, upY, upZ)

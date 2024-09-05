@@ -24,9 +24,9 @@ class MovementInputFromOptions(MovementInput):
     def updatePlayerMoveState(self):
         self.moveStrafe = 0.0
         self.moveForward = 0.0
-        if self.__keys[0]: self.moveForward -= 1.0
-        if self.__keys[1]: self.moveForward += 1.0
-        if self.__keys[2]: self.moveStrafe -= 1.0
-        if self.__keys[3]: self.moveStrafe += 1.0
+        if self.__keys[0]: self.moveForward += 1.0
+        if self.__keys[1]: self.moveForward -= 1.0
+        if self.__keys[2]: self.moveStrafe += 1.0
+        if self.__keys[3]: self.moveStrafe -= 1.0
 
         self.jump = self.__keys[4]

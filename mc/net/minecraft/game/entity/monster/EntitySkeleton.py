@@ -10,12 +10,13 @@ class EntitySkeleton(EntityMob):
         self._texture = 'mob/skeleton.png'
 
     def onLivingUpdate(self):
-        br = self.getBrightness(1.0)
-        if br > 0.5 and self._worldObj.canBlockSeeTheSky(int(self.posX),
-                                                         int(self.posY),
-                                                         int(self.posZ)) and \
-           self._rand.nextFloat() * 40.0 < (br - 0.5) * 2.0:
-            self.fire = 300
+        if self._worldObj.skylightSubtracted > 7:
+            br = self.getBrightness(1.0)
+            if br > 0.5 and self._worldObj.canBlockSeeTheSky(int(self.posX),
+                                                             int(self.posY),
+                                                             int(self.posZ)) and \
+               self._rand.nextFloat() * 30.0 < (br - 0.4) * 2.0:
+                self.fire = 300
 
         super().onLivingUpdate()
 

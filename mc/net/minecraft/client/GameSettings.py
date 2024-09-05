@@ -146,6 +146,7 @@ class GameSettings:
     limitFramerate = False
     numberOfOptions = 9
     difficulty = 2
+    thirdPersonView = False
 
     def __init__(self, mc, file):
         self.keyBindForward = KeyBinding('Forward', window.key.W)

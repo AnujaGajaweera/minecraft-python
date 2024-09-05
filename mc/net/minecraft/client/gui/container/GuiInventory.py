@@ -5,6 +5,7 @@ from mc.net.minecraft.client.gui.container.InventoryCraftResult import Inventory
 from mc.net.minecraft.client.gui.container.InventoryCrafting import InventoryCrafting
 from mc.net.minecraft.client.gui.container.GuiContainer import GuiContainer
 from mc.net.minecraft.client.gui.container.Slot import Slot
+from mc.net.minecraft.client.gui.container.SlotArmor import SlotArmor
 from mc.net.minecraft.client.gui.container.SlotCrafting import SlotCrafting
 from mc.net.minecraft.game.item.recipe.CraftingManager import CraftingManager
 from pyglet import gl
@@ -32,10 +33,10 @@ class GuiInventory(GuiContainer):
                         88 + col * 18, 26 + row * 18
                     ))
 
-        for armorSlots in range(4):
-            self._inventorySlots.append(Slot(
-                    self, inventory, inventory.getSizeInventory() - 1 - armorSlots,
-                    8, 8 + armorSlots * 18
+        for armorSlot in range(4):
+            self._inventorySlots.append(SlotArmor(
+                    self, self, inventory, inventory.getSizeInventory() - 1 - armorSlot,
+                    8, 8 + armorSlot * 18, armorSlot
                 ))
 
         for row in range(3):
@@ -105,6 +106,7 @@ class GuiInventory(GuiContainer):
         self.mc.thePlayer.renderYawOffset = (math.atan(x / 40.0)) * 20.0
         self.mc.thePlayer.rotationYaw = (math.atan(x / 40.0)) * 40.0
         self.mc.thePlayer.rotationPitch = -(math.atan(y / 40.0)) * 20.0
+        gl.glTranslatef(0.0, self.mc.thePlayer.yOffset, 0.0)
         RenderManager.instance.renderEntityWithPosYaw(
             self.mc.thePlayer, 0.0, 0.0, 0.0, 0.0, 1.0
         )

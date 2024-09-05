@@ -20,8 +20,11 @@ class Slot:
     def onPickupFromSlot(self):
         pass
 
-    def isItemValid(self):
+    def isItemValid(self, stack):
         return True
 
     def putStack(self, stack):
         self.inventory.setInventorySlotContents(self.slotIndex, stack)
+
+    def getBackgroundIconIndex(self):
+        return -1

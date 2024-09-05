@@ -28,9 +28,8 @@ class EffectRenderer:
                     self.__fxLayers[i].remove(p)
 
     def renderParticles(self, entity, translation):
-        xa = -math.cos(entity.rotationYaw * math.pi / 180.0)
-        za = -math.sin(entity.rotationYaw * math.pi / 180.0)
-
+        xa = math.cos(entity.rotationYaw * math.pi / 180.0)
+        za = math.sin(entity.rotationYaw * math.pi / 180.0)
         xa2 = -za * math.sin(entity.rotationPitch * math.pi / 180.0)
         za2 = xa * math.sin(entity.rotationPitch * math.pi / 180.0)
         ya = math.cos(entity.rotationPitch * math.pi / 180.0)

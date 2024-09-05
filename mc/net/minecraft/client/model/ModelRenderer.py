@@ -22,7 +22,7 @@ class ModelRenderer:
         self.__compiled = False
         self.__displayList = 0
         self.mirror = False
-        self.__showModel = True
+        self.showModel = True
         self.__isHidden = False
 
     def addBox(self, x0, y0, z0, w, h, d, ofs):
@@ -107,7 +107,7 @@ class ModelRenderer:
         self.__rotationPointZ = z
 
     def render(self, translation):
-        if not self.__showModel:
+        if not self.showModel:
             return
         if not self.__compiled:
             self.__displayList = gl.glGenLists(1)

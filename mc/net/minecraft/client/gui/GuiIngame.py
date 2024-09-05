@@ -40,9 +40,19 @@ class GuiIngame(Gui):
         prevHealth = self.__mc.thePlayer.prevHealth
         self.__rand.setSeed(self.__updateCounter * 312871)
         if self.__mc.playerController.shouldDrawHUD():
+            armorValue = self.__mc.thePlayer.inventory.getPlayerArmorValue()
             for i in range(10):
-                x = scaledWidth / 2 - 91 + (i << 3)
                 y = scaledHeight - 32
+                if armorValue > 0:
+                    x = scaledWidth // 2 + 91 - (i << 3) - 9
+                    if (i << 1) + 1 < armorValue:
+                        self.drawTexturedModalRect(x, y, 34, 9, 9, 9)
+                    elif (i << 1) + 1 == armorValue:
+                        self.drawTexturedModalRect(x, y, 25, 9, 9, 9)
+                    elif (i << 1) + 1 > armorValue:
+                        self.drawTexturedModalRect(x, y, 16, 9, 9, 9)
+
+                x = scaledWidth // 2 - 91 + (i << 3)
                 if health <= 4:
                     y += self.__rand.nextInt(2)
 

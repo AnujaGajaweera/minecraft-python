@@ -14,9 +14,9 @@ class ItemStack:
             self.itemID = obj
         elif isinstance(obj, Compound):
             compound = obj
-            self.itemID = compound['id'].real
-            self.stackSize = compound['Count'].real
-            self.itemDamage = compound['Damage'].real
+            self.itemID = compound.get('id', Short(0)).real
+            self.stackSize = compound.get('Count', Byte(1)).real
+            self.itemDamage = compound.get('Damage', Short(0)).real
         elif hasattr(obj, 'shiftedIndex'):
             self.itemID = obj.shiftedIndex
 

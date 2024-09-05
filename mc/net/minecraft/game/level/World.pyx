@@ -106,14 +106,14 @@ cdef class World:
         for i in range(self.width * self.length):
             self.heightMap[i] = self.height
 
-        self.__light.updateSkylight(0, 0, self.width, self.length)
+        self.__lightUpdates.updateSkylight(0, 0, self.width, self.length)
         self.__randId = self.rand.nextInt()
         self.__tickList = set()
 
         if not self.entityMap:
             self.entityMap = EntityMap(self.width, self.height, self.length)
 
-    def generate(self, int w, int h, int d, bytearray b):
+    def generate(self, int w, int h, int d, bytearray b, bytearray data):
         cdef int x, y, z, i, skyBrightness, br
         cdef char blockId
 
@@ -152,92 +152,43 @@ cdef class World:
 
                     y += 1
 
-        self.data = <char*>malloc(sizeof(char) * len(b))
         for i in range(len(b)):
             self.blocks[i] = b[i]
-            self.data[i] = 0
 
         self.heightMap = <int*>malloc(sizeof(int) * (w * d))
         for i in range(w * d):
             self.heightMap[i] = h
 
-        self.__light = Light(self)
-        skyBrightness = self.skylightSubtracted
-        for x in range(self.width):
-            for z in range(self.length):
-                y = self.height - 1
-                while y > 0 and self.lightOpacity[self.getBlockId(x, y, z)] == 0:
-                    y -= 1
+        if data:
+            self.data = <char*>malloc(sizeof(char) * len(data))
+            for i in range(len(data)):
+                self.data[i] = data[i]
 
-                self.heightMap[x + z * self.width] = y + 1
-                for y in range(self.height):
-                    i = (y * self.length + z) * self.width + x
-                    br = self.heightMap[x + z * self.width]
-                    br = skyBrightness if y >= br else 0
-                    br = max(br, self.lightValue[<char>(self.blocks[i])])
-                    self.data[i] = <char>((self.data[i] & 240) + br)
+            self.__lightUpdates = Light(self)
+        else:
+            self.data = <char*>malloc(sizeof(char) * len(b))
+            for i in range(len(b)):
+                self.data[i] = 0
 
-        self.__light.updateBlockLight(0, 0, 0, self.width, self.height, self.length)
+            self.__lightUpdates = Light(self)
+            skyBrightness = self.skylightSubtracted
+            for x in range(self.width):
+                for z in range(self.length):
+                    y = self.height - 1
+                    while y > 0 and self.lightOpacity[self.getBlockId(x, y, z)] == 0:
+                        y -= 1
 
-        for worldAccess in self.worldAccesses:
-            worldAccess.loadRenderers()
+                    self.heightMap[x + z * self.width] = y + 1
+                    for y in range(self.height):
+                        i = (y * self.length + z) * self.width + x
+                        br = self.heightMap[x + z * self.width]
+                        br = skyBrightness if y >= br else 0
+                        br = max(br, self.lightValue[<char>(self.blocks[i])])
+                        self.data[i] = <char>((self.data[i] & 240) + br)
 
-        self.__tickList.clear()
-        self.findSpawn()
-        self.load()
-        gc.collect()
+            self.__lightUpdates.updateBlockLight(0, 0, 0, self.width,
+                                                 self.height, self.length)
 
-    def loadWorld(self, int w, int h, int d, bytearray b, bytearray data):
-        cdef int x, y, z, i
-        cdef char blockId
-
-        self.width = w
-        self.height = h
-        self.length = d
-        self.blocks = <char*>malloc(sizeof(char) * len(b))
-        self.blocksSize = len(b)
-
-        for i in range(256):
-            self.lightOpacity[i] = blocks.lightOpacity[i]
-            self.lightValue[i] = blocks.lightValue[i]
-
-        for x in range(self.width):
-            for z in range(self.length):
-                y = 0
-                while y < self.height:
-                    blockId = 0
-                    if y <= 1 and y < self.groundLevel - 1 and \
-                       b[((y + 1) * self.length + z) * self.width + x]:
-                        blockId = blocks.lavaStill.blockID
-                    elif y < self.groundLevel - 1:
-                        blockId = blocks.bedrock.blockID
-                    elif y < self.groundLevel:
-                        if self.groundLevel > self.waterLevel and \
-                           self.defaultFluid == blocks.waterMoving.blockID:
-                            blockId = blocks.grass.blockID
-                        else:
-                            blockId = blocks.dirt.blockID
-                    elif y < self.waterLevel:
-                        blockId = self.defaultFluid
-
-                    b[(y * self.length + z) * self.width + x] = blockId
-                    if y == 1 and x != 0 and z != 0 and x != self.width - 1 and z != self.length - 1:
-                        y = self.height - 2
-
-                    y += 1
-
-        for i in range(len(b)):
-            self.blocks[i] = b[i]
-
-        self.data = <char*>malloc(sizeof(char) * len(data))
-        for i in range(len(data)):
-            self.data[i] = data[i]
-
-        self.heightMap = <int*>malloc(sizeof(int) * (w * d))
-        for i in range(w * d):
-            self.heightMap[i] = h
-
-        self.__light = Light(self)
         for worldAccess in self.worldAccesses:
             worldAccess.loadRenderers()
 
@@ -259,10 +210,11 @@ cdef class World:
             x = random.nextInt(self.width // 2) + self.width // 4
             z = random.nextInt(self.length // 2) + self.length // 4
             y = self.__getFirstUncoveredBlock(x, z) + 1
-            if i == 1000000:
+            if i == 10000:
                 self.xSpawn = x
                 self.ySpawn = self.height + 100
                 self.zSpawn = z
+                self.rotSpawn = 180.0
                 break
 
             if y >= 4 and y > self.waterLevel:
@@ -291,6 +243,7 @@ cdef class World:
                 self.xSpawn = x
                 self.ySpawn = y
                 self.zSpawn = z
+                self.rotSpawn = 180.0
                 break
 
     def addWorldAccess(self, worldAccess):
@@ -372,8 +325,8 @@ cdef class World:
 
         if self.lightOpacity[oldBlock] != self.lightOpacity[blockType] or \
            self.lightValue[oldBlock] != 0 or self.lightValue[blockType] != 0:
-            self.__light.updateSkylight(x, z, 1, 1)
-            self.__light.updateBlockLight(x, y, z, x + 1, y + 1, z + 1)
+            self.__lightUpdates.updateSkylight(x, z, 1, 1)
+            self.__lightUpdates.updateBlockLight(x, y, z, x + 1, y + 1, z + 1)
 
         for worldAccess in self.worldAccesses:
             worldAccess.markBlockAndNeighborsNeedsUpdate(x, y, z)
@@ -402,7 +355,7 @@ cdef class World:
             return False
 
         self.blocks[(y * self.length + z) * self.width + x] = <char>blockType
-        self.__light.updateBlockLight(x, y, z, x + 1, y + 1, z + 1)
+        self.__lightUpdates.updateBlockLight(x, y, z, x + 1, y + 1, z + 1)
         return True
 
     cdef __notifyBlockOfNeighborChange(self, int x, int y, int z, int blockType):
@@ -437,7 +390,7 @@ cdef class World:
         self.entityMap.updateEntities()
 
     def updateLighting(self):
-        self.__light.updateLight()
+        self.__lightUpdates.updateLight()
 
     cdef float getStarBrightness(self, float alpha):
         cdef float theta = self.getCelestialAngle(alpha)
@@ -909,7 +862,7 @@ cdef class World:
                         return hitResult
 
     cpdef bint growTrees(self, int x, int y, int z):
-        cdef int xx, yy, zz, i, leafExt, leafExtLeft, offset, logs, zd
+        cdef int logs, xx, yy, zz, i, leafExt, leafExtLeft, offset
         cdef bint willGrow
         cdef char block
 
@@ -923,7 +876,6 @@ cdef class World:
             offset = 1
             if yy == y:
                 offset = 0
-
             if yy >= y + 1 + logs - 2:
                 offset = 2
 
@@ -935,7 +887,8 @@ cdef class World:
                     if not willGrow:
                         break
 
-                    if xx >= 0 and yy >= 0 and zz >= 0 and xx < self.width and yy < self.height and zz < self.length:
+                    if xx >= 0 and yy >= 0 and zz >= 0 and xx < self.width and \
+                       yy < self.height and zz < self.length:
                         block = self.blocks[(yy * self.length + zz) * self.width + xx] & 0xFF
                         if block != 0:
                             willGrow = False
@@ -946,19 +899,18 @@ cdef class World:
             return False
 
         block = self.blocks[((y - 1) * self.length + z) * self.width + x] & 0xFF
-        if (block != blocks.grass.blockID and block != blocks.dirt.blockID) or y >= self.height - logs - 1:
+        if (block != blocks.grass.blockID and block != blocks.dirt.blockID) or \
+           y >= self.height - logs - 1:
             return False
 
         self.setBlockWithNotify(x, y - 1, z, blocks.dirt.blockID)
         for yy in range(y - 3 + logs, y + logs + 1):
             leafExtLeft = yy - (y + logs)
-            leafExt = 1 - leafExtLeft // 2
+            leafExt = <int>(1 - leafExtLeft / 2)
             for xx in range(x - leafExt, x + leafExt + 1):
-                willGrow = xx - x
                 for zz in range(z - leafExt, z + leafExt + 1):
-                    zd = zz - z
-                    if (abs(willGrow) != leafExt or abs(zd) != leafExt or \
-                        (self.rand.nextInt(2) != 0 and leafExtLeft != 0)) and not \
+                    if (abs(xx - x) != leafExt or abs(zz - z) != leafExt or \
+                        self.rand.nextInt(2) != 0 and leafExtLeft != 0) and not \
                        blocks.opaqueCubeLookup[self.getBlockId(xx, yy, zz)]:
                         self.setBlockWithNotify(xx, yy, zz, blocks.leaves.blockID)
 
@@ -1140,9 +1092,6 @@ cdef class World:
         for entity in self.entityMap.all:
             if issubclass(entity.__class__, cls):
                 return entity
-
-    def getMapHeight(self, int x, int z):
-        return self.heightMap[x + z * self.width]
 
     cdef int fluidFlowCheck(self, int x, int y, int z, int source, int tt):
         cdef int orgX, orgZ, pos, flooded, sourceBlock, floodedBlocks, lastDistance, i, \
@@ -1434,7 +1383,13 @@ cdef class World:
             del self.map[x + (y << 10) + (z << 10 << 10)]
 
     def getBlockTileEntity(self, int x, int y, int z):
-        return self.map.get(x + (y << 10) + (z << 10 << 10))
+        cdef int coord = x + (y << 10) + (z << 10 << 10)
+        tileEntity = self.map.get(coord)
+        if not tileEntity:
+            blocks.blocksList[self.getBlockId(x, y, z)].onBlockAdded(self, x, y, z)
+            tileEntity = self.map.get(coord)
+
+        return tileEntity
 
     def spawnParticle(self, str particle, float x, float y, float z,
                       float xr, float yr, float zr):
@@ -1470,7 +1425,7 @@ cdef class World:
 
     def debugSkylightUpdates(self):
         return str(len(self.__tickList)) + '. L: ' + \
-               str(self.__light.debugSkylightUpdates())
+               str(self.__lightUpdates.debugSkylightUpdates())
 
     def setLevel(self):
         cdef int i
@@ -1481,7 +1436,7 @@ cdef class World:
                 worldAccess.releaseEntitySkin(self.entityMap.all[i])
 
     cdef __updateChunkLight(self, int lightSubtracted):
-        self.__light.updateDaylightCycle(lightSubtracted)
+        self.__lightUpdates.updateDaylightCycle(lightSubtracted)
 
     def canBlockSeeTheSky(self, int x, int y, int z):
         if self.heightMap[x + z * self.width] <= y:
