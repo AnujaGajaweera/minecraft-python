@@ -113,14 +113,13 @@ class EntityItem(Entity):
             self.setEntityDead()
 
     def _dealFireDamage(self, hp):
-        if self.item.getItem().onPlaced(self._worldObj, self.posX,
-                                        self.posY, self.posZ):
-            self.item.stackSize -= 1
-
-        if self.item.stackSize == 0:
-            self.setEntityDead()
+        self.attackEntityFrom(None, 1)
 
     def attackEntityFrom(self, entity, damage):
+        self.__health -= damage
+        if self.__health <= 0:
+            self.setEntityDead()
+
         return False
 
     def _writeEntityToNBT(self, compound):

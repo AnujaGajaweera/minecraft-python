@@ -66,6 +66,7 @@ cdef class World:
         self.__tickList = set()
 
         self.map = {}
+        self.__list = []
 
         self.rand = Random()
         self.__rand = Random()
@@ -388,6 +389,8 @@ cdef class World:
 
     def updateEntities(self):
         self.entityMap.updateEntities()
+        for entity in self.__list:
+            entity.updateEntity()
 
     def updateLighting(self):
         self.__lightUpdates.updateLight()
@@ -1376,11 +1379,16 @@ cdef class World:
             self.setBlockWithNotify(x, y, z, 0)
 
     def setBlockTileEntity(self, int x, int y, int z, entity):
+        entity.worldObj = self
+        entity.xCoord = x
+        entity.yCoord = y
+        entity.zCoord = z
         self.map[x + (y << 10) + (z << 10 << 10)] = entity
+        self.__list.append(entity)
 
     def removeBlockTileEntity(self, int x, int y, int z):
         if x + (y << 10) + (z << 10 << 10) in self.map:
-            del self.map[x + (y << 10) + (z << 10 << 10)]
+            self.__list.remove(self.map.pop(x + (y << 10) + (z << 10 << 10)))
 
     def getBlockTileEntity(self, int x, int y, int z):
         cdef int coord = x + (y << 10) + (z << 10 << 10)

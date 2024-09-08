@@ -27,7 +27,7 @@ class PlayerControllerSP(PlayerController):
             items.itemsList[stack.itemID].onBlockDestroyed(stack)
             if stack.stackSize == 0:
                 self._mc.thePlayer.displayGUIInventory()
-        if change:
+        if change and self._mc.thePlayer.canHarvestBlock(blocks.blocksList[block]):
             blocks.blocksList[block].dropBlockAsItem(self._mc.theWorld, x, y, z, metadata)
 
         return change

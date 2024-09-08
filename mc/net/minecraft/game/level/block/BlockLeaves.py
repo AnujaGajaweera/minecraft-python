@@ -26,5 +26,5 @@ class BlockLeaves(BlockLeavesBase):
         else:
             return 0
 
-    def idDropped(self, metadata):
+    def idDropped(self, metadata, random):
         return self.blocks.sapling.blockID

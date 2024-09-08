@@ -36,7 +36,10 @@ class GuiMainMenu(GuiScreen):
             'Thousands of colors!', 'Try it!', 'Age of Wonders is better!',
             'Try the mushroom stew!', 'Sensational!', 'Hot tamale, hot hot tamale!',
             'Play him off, keyboard cat!', 'Guaranteed!', 'Macroscopic!', 'Bring it on!',
-            'Random splash!', 'Call your mother!', 'Monster infighting!'
+            'Random splash!', 'Call your mother!', 'Monster infighting!', 'Loved by millions!',
+            'Ultimate edition!', 'Freaky!', 'You\'ve got a brand new key!', 'Water proof!',
+            'Uninflammable!', 'Whoa, dude!', 'All inclusive!', 'Tell your friends!',
+            'NP is not in P!', 'Notch <3 Ez!', 'Music by C418!'
         )
         self.__currentSplash = self.__splashes[int(random() * len(self.__splashes))]
 

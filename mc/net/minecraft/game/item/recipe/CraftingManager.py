@@ -40,6 +40,8 @@ class CraftingManager:
         RecipesCrafting()
         self.addRecipe(ItemStack(blocks.chest),
                        ('###', '# #', '###', ord('#'), blocks.planks))
+        self.addRecipe(ItemStack(blocks.stoneOvenIdle),
+                       ('###', '# #', '###', ord('#'), blocks.cobblestone))
         self.addRecipe(ItemStack(blocks.workbench),
                        ('##', '##', ord('#'), blocks.planks))
         RecipesArmor().addRecipes(self)
@@ -53,15 +55,14 @@ class CraftingManager:
                        items.silk, ord('#'), items.stick))
         self.addRecipe(ItemStack(blocks.stairSingle, 3),
                        ('###', ord('#'), blocks.cobblestone))
-        self.addRecipe(ItemStack(items.arrow, 4),
-                       ('X', '#', 'Y', ord('Y'), items.feather, ord('X'),
-                       items.ingotIron, ord('#'), items.stick))
         self.addRecipe(ItemStack(items.stick, 4),
                        ('#', '#', ord('#'), blocks.planks))
         self.addRecipe(ItemStack(blocks.torch, 4),
                        ('X', '#', ord('X'), items.coal, ord('#'), items.stick))
         self.addRecipe(ItemStack(items.bowlEmpty, 4),
                        ('# #', ' # ', ord('#'), blocks.planks))
+        self.addRecipe(ItemStack(items.striker, 1),
+                       ('A ', ' B', ord('A'), items.ingotIron, ord('B'), items.flint))
         self.addRecipe(ItemStack(items.bread, 1),
                        ('###', '###', ord('#'), items.wheat))
         self.__recipes = sorted(

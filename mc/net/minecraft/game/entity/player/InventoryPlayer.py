@@ -4,7 +4,6 @@ from mc.net.minecraft.game.item.ItemStack import ItemStack
 from mc.net.minecraft.game.Inventory import Inventory
 
 class InventoryPlayer(Inventory):
-    PLAYER_STACK_LIMIT = 64
 
     def __init__(self, player):
         self.__player = player
@@ -77,7 +76,7 @@ class InventoryPlayer(Inventory):
                 if self.mainInventory[maybeSlot] and self.mainInventory[maybeSlot].itemID == itemId:
                     item = self.mainInventory[maybeSlot]
                     if self.mainInventory[maybeSlot].stackSize < item.getItem().getItemStackLimit() and \
-                       self.mainInventory[maybeSlot].stackSize < InventoryPlayer.PLAYER_STACK_LIMIT:
+                       self.mainInventory[maybeSlot].stackSize < Inventory.STACK_LIMIT:
                         slot = maybeSlot
                         break
 
@@ -98,7 +97,7 @@ class InventoryPlayer(Inventory):
 
                 stackExcess = min(
                     stackExcess,
-                    InventoryPlayer.PLAYER_STACK_LIMIT - self.mainInventory[slot].stackSize
+                    Inventory.STACK_LIMIT - self.mainInventory[slot].stackSize
                 )
                 if stackExcess == 0:
                     stackSize = stackSize
@@ -162,7 +161,7 @@ class InventoryPlayer(Inventory):
         return 'Inventory'
 
     def getInventoryStackLimit(self):
-        return InventoryPlayer.PLAYER_STACK_LIMIT
+        return Inventory.STACK_LIMIT
 
     def getPlayerArmorValue(self):
         damageReduceCount = 0

@@ -1,4 +1,5 @@
 from mc.net.minecraft.game.entity.monster.EntityMob import EntityMob
+from mc.net.minecraft.game.item.Items import items
 
 class EntityCreeper(EntityMob):
 
@@ -47,3 +48,6 @@ class EntityCreeper(EntityMob):
 
     def getCreeperState(self, a):
         return (self.__lastActiveTime + (self.__timeSinceIgnited - self.__lastActiveTime) * a) / (self.__fuseTime - 2)
+
+    def _getDropItemId(self):
+        return items.gunpowder.shiftedIndex

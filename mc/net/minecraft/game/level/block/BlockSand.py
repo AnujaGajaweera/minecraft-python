@@ -6,7 +6,7 @@ class BlockSand(Block):
 
     def __init__(self, blocks, blockId, tex):
         super().__init__(blocks, blockId, tex, Material.sand)
-        self.__rand = Random()
+        Random()
 
     def onBlockAdded(self, world, x, y, z):
         self.__tryToFall(world, x, y, z)
@@ -42,21 +42,3 @@ class BlockSand(Block):
             newY -= 1
             if world.getBlockId(x, newY, z) == self.blocks.fire.blockID:
                 world.setBlock(x, newY, z, 0)
-
-    def onPlaced(self, world, x, y, z):
-        from mc.net.minecraft.game.entity.misc.EntityItem import EntityItem
-        from mc.net.minecraft.game.item.ItemStack import ItemStack
-
-        blockId = self.blocks.glass.blockID
-        drops = self.__rand.nextInt(3) + 1
-        for i in range(drops):
-            if world.rand.nextFloat() <= 1.0:
-                itemX = world.rand.nextFloat() * 0.7 + 0.15
-                itemY = world.rand.nextFloat() * 0.7 + 0.15
-                itemZ = world.rand.nextFloat() * 0.7 + 0.15
-                item = EntityItem(world, x + itemX, y + itemY, z + itemZ,
-                                  ItemStack(blockId))
-                item.delayBeforeCanPickup = 10
-                world.spawnEntityInWorld(item)
-
-        return True

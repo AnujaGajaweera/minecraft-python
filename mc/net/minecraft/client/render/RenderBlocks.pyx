@@ -37,6 +37,9 @@ cdef class RenderBlocks:
         if renderType == 0:
             if self.__flipTexture or block.shouldSideBeRendered(self.__blockAccess, x, y - 1, z, 0):
                 b = block.getBlockBrightness(self.__blockAccess, x, y - 1, z)
+                if self.__blockAccess.lightValue[block.blockID] > 0:
+                    b = 1.0
+
                 self.__tessellator.setColorOpaque_F(0.5 * b, 0.5 * b, 0.5 * b)
                 self.__renderBlockBottom(
                     block, x, y, z,
@@ -45,6 +48,9 @@ cdef class RenderBlocks:
                 layerOk = True
             if self.__flipTexture or block.shouldSideBeRendered(self.__blockAccess, x, y + 1, z, 1):
                 b = block.getBlockBrightness(self.__blockAccess, x, y + 1, z)
+                if self.__blockAccess.lightValue[block.blockID] > 0:
+                    b = 1.0
+
                 self.__tessellator.setColorOpaque_F(b, b, b)
                 self.__renderBlockTop(
                     block, x, y, z,
@@ -53,6 +59,9 @@ cdef class RenderBlocks:
                 layerOk = True
             if self.__flipTexture or block.shouldSideBeRendered(self.__blockAccess, x, y, z - 1, 2):
                 b = block.getBlockBrightness(self.__blockAccess, x, y, z - 1)
+                if self.__blockAccess.lightValue[block.blockID] > 0:
+                    b = 1.0
+
                 self.__tessellator.setColorOpaque_F(0.8 * b, 0.8 * b, 0.8 * b)
                 self.__renderBlockNorth(
                     block, x, y, z,
@@ -61,6 +70,9 @@ cdef class RenderBlocks:
                 layerOk = True
             if self.__flipTexture or block.shouldSideBeRendered(self.__blockAccess, x, y, z + 1, 3):
                 b = block.getBlockBrightness(self.__blockAccess, x, y, z + 1)
+                if self.__blockAccess.lightValue[block.blockID] > 0:
+                    b = 1.0
+
                 self.__tessellator.setColorOpaque_F(0.8 * b, 0.8 * b, 0.8 * b)
                 self.__renderBlockSouth(
                     block, x, y, z,
@@ -69,6 +81,9 @@ cdef class RenderBlocks:
                 layerOk = True
             if self.__flipTexture or block.shouldSideBeRendered(self.__blockAccess, x - 1, y, z, 4):
                 b = block.getBlockBrightness(self.__blockAccess, x - 1, y, z)
+                if self.__blockAccess.lightValue[block.blockID] > 0:
+                    b = 1.0
+
                 self.__tessellator.setColorOpaque_F(0.6 * b, 0.6 * b, 0.6 * b)
                 self.__renderBlockWest(
                     block, x, y, z,
@@ -77,6 +92,9 @@ cdef class RenderBlocks:
                 layerOk = True
             if self.__flipTexture or block.shouldSideBeRendered(self.__blockAccess, x + 1, y, z, 5):
                 b = block.getBlockBrightness(self.__blockAccess, x + 1, y, z)
+                if self.__blockAccess.lightValue[block.blockID] > 0:
+                    b = 1.0
+
                 self.__tessellator.setColorOpaque_F(0.6 * b, 0.6 * b, 0.6 * b)
                 self.__renderBlockEast(
                     block, x, y, z,
@@ -150,7 +168,7 @@ cdef class RenderBlocks:
         elif renderType == 2:
             metadata = self.__blockAccess.getBlockMetadata(x, y, z)
             b = block.getBlockBrightness(self.__blockAccess, x, y, z)
-            if blocks.lightValue[block.blockID] > 0:
+            if self.__blockAccess.lightValue[block.blockID] > 0:
                 b = 1.0
 
             self.__tessellator.setColorOpaque_F(b, b, b)

@@ -36,7 +36,7 @@ cdef class Block:
     cpdef void onNeighborBlockChange(self, World world, int x, int y, int z, int blockType) except *
     cdef int tickRate(self)
     cpdef int quantityDropped(self, Random random)
-    cpdef int idDropped(self, int metadata)
+    cpdef int idDropped(self, int metadata, Random random)
     cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z,
                                    int metadata, float chance)
     cdef float getExplosionResistance(self)

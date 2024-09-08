@@ -45,6 +45,3 @@ class ItemBlock(Item):
                                 block.stepSound.soundPitch * 0.8)
         stack.stackSize -= 1
         return True
-
-    def onPlaced(self, world, x, y, z):
-        return blocks.blocksList[self.__blockID].onPlaced(world, x, y, z)

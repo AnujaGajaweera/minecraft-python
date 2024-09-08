@@ -1,4 +1,5 @@
 class Inventory:
+    STACK_LIMIT = 64
 
     def getSizeInventory(self):
         return 0

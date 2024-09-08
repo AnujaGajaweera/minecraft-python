@@ -191,3 +191,6 @@ class EntityPlayer(EntityLiving):
             return False
         else:
             return super().attackEntityFrom(entity, damage)
+
+    def displayGUIFurnace(self, furnaceInventory):
+        pass

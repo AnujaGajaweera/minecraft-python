@@ -8,6 +8,9 @@ class Item:
     def __init__(self, items, itemId):
         self.items = items
         self.shiftedIndex = itemId + 256
+        if items.itemsList[itemId + 256]:
+            print('CONFLICT @', itemId)
+
         items.itemsList[itemId + 256] = self
         self._maxStackSize = Item.TOTAL_STACK_SIZE
         self._maxDamage = Item.MAX_DAMAGE
@@ -30,9 +33,6 @@ class Item:
 
     def getItemStackLimit(self):
         return self._maxStackSize
-
-    def onPlaced(self, world, x, y, z):
-        return False
 
     def getMaxDamage(self):
         return self._maxDamage

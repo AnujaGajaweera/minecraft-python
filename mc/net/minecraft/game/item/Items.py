@@ -96,6 +96,11 @@ class Items:
         self.legsGold = ItemArmor(self, 60, 1, 4, 2).setIconIndex(36)
         self.bootsGold = ItemArmor(self, 61, 1, 4, 3).setIconIndex(52)
 
+        self.flint = Item(self, 62).setIconIndex(6)
+
+        self.porkRaw = ItemFood(self, 63, 3).setIconIndex(87)
+        self.porkCooked = ItemFood(self, 64, 8).setIconIndex(88)
+
         for i in range(256):
             if blocks.blocksList[i]:
                 self.itemsList[i] = ItemBlock(self, i - 256)

@@ -1,4 +1,5 @@
 from mc.net.minecraft.game.entity.monster.EntityMob import EntityMob
+from mc.net.minecraft.game.item.Items import items
 
 import math
 
@@ -43,3 +44,6 @@ class EntitySpider(EntityMob):
 
     def _getEntityString(self):
         return 'Spider'
+
+    def _getDropItemId(self):
+        return items.silk.shiftedIndex

@@ -1,4 +1,5 @@
 from mc.net.minecraft.game.entity.animal.EntityAnimal import EntityAnimal
+from mc.net.minecraft.game.item.Items import items
 
 class EntityPig(EntityAnimal):
 
@@ -24,3 +25,6 @@ class EntityPig(EntityAnimal):
 
     def _getDeathSound(self):
         return 'mob.pigdeath'
+
+    def _getDropItemId(self):
+        return items.porkRaw.shiftedIndex

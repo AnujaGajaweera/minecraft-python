@@ -75,7 +75,7 @@ class BlockCrops(BlockFlower):
                 entity.delayBeforeCanPickup = 10
                 world.spawnEntityInWorld(entity)
 
-    def idDropped(self, metadata):
+    def idDropped(self, metadata, random):
         from mc.net.minecraft.game.item.Items import items
         print('Get resource:', metadata)
         return items.wheat.shiftedIndex if metadata == 7 else -1

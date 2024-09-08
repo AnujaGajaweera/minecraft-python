@@ -1,4 +1,5 @@
 from mc.net.minecraft.game.entity.monster.EntityMob import EntityMob
+from mc.net.minecraft.game.item.Items import items
 
 class EntityZombie(EntityMob):
 
@@ -21,3 +22,6 @@ class EntityZombie(EntityMob):
 
     def _getEntityString(self):
         return 'Zombie'
+
+    def _getDropItemId(self):
+        return items.feather.shiftedIndex

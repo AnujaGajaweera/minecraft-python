@@ -6,7 +6,6 @@ from libc.math cimport sin, cos, ceil, sqrt, atan2, pi
 
 from mc.net.minecraft.game.entity.Entity cimport Entity
 from mc.net.minecraft.game.level.block.Blocks import blocks
-from mc.net.minecraft.game.item.Items import items
 from mc.JavaUtils cimport random
 from pyglet import gl
 
@@ -238,20 +237,15 @@ cdef class EntityLiving(Entity):
         return 'random.hurt'
 
     def onDeath(self, Entity entity):
-        cdef int i
-        cdef int drops = self._rand.nextInt(3)
-        cdef int drop = self._rand.nextInt(4)
-        if drop == 0:
+        cdef int i, drops
+        cdef int drop = self._getDropItemId()
+        if drop > 0:
+            drops = self._rand.nextInt(3)
             for i in range(drops):
-                self.dropItemWithOffset(items.silk.shiftedIndex, 1)
-        elif drop == 1:
-            for i in range(drops):
-                self.dropItemWithOffset(items.gunpowder.shiftedIndex, 1)
-        elif drop == 2:
-            for i in range(drops):
-                self.dropItemWithOffset(items.feather.shiftedIndex, 1)
-        elif drop == 3:
-            self.dropItemWithOffset(items.striker.shiftedIndex, 1)
+                self.dropItemWithOffset(drop, 1)
+
+    def _getDropItemId(self):
+        return 0
 
     cdef _fall(self, float d):
         cdef int damage = <int>ceil(d - 3.0)

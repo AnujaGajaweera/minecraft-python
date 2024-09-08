@@ -1,5 +1,6 @@
 from mc.net.minecraft.game.entity.monster.EntityMob import EntityMob
 from mc.net.minecraft.game.entity.projectile.EntityArrow import EntityArrow
+from mc.net.minecraft.game.item.Items import items
 
 import math
 
@@ -49,3 +50,6 @@ class EntitySkeleton(EntityMob):
 
     def _getEntityString(self):
         return 'Skeleton'
+
+    def _getDropItemId(self):
+        return items.arrow.shiftedIndex

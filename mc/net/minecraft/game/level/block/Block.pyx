@@ -124,7 +124,7 @@ cdef class Block:
     cpdef int quantityDropped(self, Random random):
         return 1
 
-    cpdef int idDropped(self, int metadata):
+    cpdef int idDropped(self, int metadata, Random random):
         return self.blockID
 
     def blockStrength(self, player):
@@ -151,7 +151,7 @@ cdef class Block:
             if world.rand.nextFloat() > chance:
                 continue
 
-            idDrop = self.idDropped(metadata)
+            idDrop = self.idDropped(metadata, world.rand)
             if idDrop <= 0:
                 continue
 
@@ -253,9 +253,6 @@ cdef class Block:
         return True
 
     def blockActivated(self, World world, int x, int y, int z, player):
-        return False
-
-    def onPlaced(self, World world, float x, float y, float z):
         return False
 
     def onEntityWalking(self, World world, int x, int y, int z):

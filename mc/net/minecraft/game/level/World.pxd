@@ -40,6 +40,7 @@ cdef class World:
         set __tickList
 
         public dict map
+        list __list
 
         int* heightMap
 

@@ -334,6 +334,8 @@ class Minecraft(window.Window):
 
             self.isGamePaused = self.currentScreen is not None and \
                                 self.currentScreen.doesGuiPauseGame()
+        except RuntimeError as e:
+            raise e
         except Exception as e:
             print(traceback.format_exc())
             self.displayGuiScreen(GuiErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))

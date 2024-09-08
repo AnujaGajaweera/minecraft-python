@@ -10,7 +10,7 @@ class BlockLog(Block):
     def quantityDropped(self, random):
         return random.nextInt(3) + 3
 
-    def idDropped(self, metadata):
+    def idDropped(self, metadata, random):
         return self.blocks.planks.blockID
 
     def getBlockTextureFromSide(self, face):

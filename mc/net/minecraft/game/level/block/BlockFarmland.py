@@ -90,5 +90,5 @@ class BlockFarmland(Block):
         if material.isSolid():
             world.setBlockWithNotify(x, y, z, self.blocks.dirt.blockID)
 
-    def idDropped(self, metadata):
-        return self.blocks.dirt.idDropped(0)
+    def idDropped(self, metadata, random):
+        return self.blocks.dirt.idDropped(0, random)

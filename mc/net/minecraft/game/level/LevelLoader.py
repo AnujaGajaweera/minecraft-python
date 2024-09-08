@@ -8,6 +8,7 @@ from mc.net.minecraft.game.entity.monster.EntitySkeleton import EntitySkeleton
 from mc.net.minecraft.game.entity.monster.EntitySpider import EntitySpider
 from mc.net.minecraft.game.entity.monster.EntityZombie import EntityZombie
 from mc.net.minecraft.game.level.block.tileentity.TileEntityChest import TileEntityChest
+from mc.net.minecraft.game.level.block.tileentity.TileEntityFurnace import TileEntityFurnace
 from mc.net.minecraft.game.level.block.Blocks import blocks
 from mc.net.minecraft.game.level.World import World
 
@@ -81,13 +82,18 @@ class LevelLoader:
             try:
                 pos = compound.get('Pos', Int(0)).real
                 entityType = str(compound.get('id', ''))
-                chest = TileEntityChest() if entityType == 'Chest' else None
-                if chest:
-                    chest.readFromNBT(compound)
+                entity = None
+                if entityType == 'Chest':
+                    entity = TileEntityChest()
+                elif entityType == 'Furnace':
+                    entity = TileEntityFurnace()
+
+                if entity:
                     x = pos % 1024
                     y = (pos >> 10) % 1024
                     z = (pos >> 20) % 1024
-                    world.setBlockTileEntity(x, y, z, chest)
+                    entity.readFromNBT(compound)
+                    world.setBlockTileEntity(x, y, z, entity)
                 else:
                     print(f'Skipping unknown tile entity id "{entityType}"')
             except Exception as e:

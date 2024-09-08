@@ -27,5 +27,5 @@ class BlockGrass(Block):
                world.getBlockMaterial(x, y + 1, z).getCanBlockGrass():
                 world.setBlockWithNotify(xt, yt, zt, self.blocks.grass.blockID)
 
-    def idDropped(self, metadata):
-        return self.blocks.dirt.idDropped(0)
+    def idDropped(self, metadata, random):
+        return self.blocks.dirt.idDropped(0, random)

@@ -1,7 +1,6 @@
 from mc.net.minecraft.game.Inventory import Inventory
 
 class InventoryCraftResult(Inventory):
-    STACK_LIMIT = 64
 
     def __init__(self):
         self.__stackResult = [None]
@@ -27,4 +26,4 @@ class InventoryCraftResult(Inventory):
         self.__stackResult[slot] = stack
 
     def getInventoryStackLimit(self):
-        return InventoryCraftResult.STACK_LIMIT
+        return Inventory.STACK_LIMIT

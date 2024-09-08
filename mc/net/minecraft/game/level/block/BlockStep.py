@@ -29,7 +29,7 @@ class BlockStep(Block):
             world.setBlockWithNotify(x, y, z, 0)
             world.setBlockWithNotify(x, y - 1, z, self.blocks.stairDouble.blockID)
 
-    def idDropped(self, metadata):
+    def idDropped(self, metadata, random):
         return self.blocks.stairSingle.blockID
 
     def renderAsNormalBlock(self):

@@ -1,7 +1,6 @@
 from mc.net.minecraft.game.Inventory import Inventory
 
 class InventoryCrafting(Inventory):
-    STACK_LIMIT = 64
 
     def __init__(self, eventHandler, width, height):
         self.__inventoryWidth = width * height
@@ -39,4 +38,4 @@ class InventoryCrafting(Inventory):
         self.__eventHandler.guiCraftingItemsCheck()
 
     def getInventoryStackLimit(self):
-        return InventoryCrafting.STACK_LIMIT
+        return Inventory.STACK_LIMIT
