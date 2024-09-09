@@ -10,3 +10,4 @@ class ItemArmor(Item):
         self.renderIndex = renderIndex
         self.damageReduceAmount = ItemArmor.__damageReduceAmountArray[armorType]
         self._maxDamage = ItemArmor.__maxDamageArray[armorType] * 3 << armorLevel
+        self._maxStackSize = 1

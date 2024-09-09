@@ -68,7 +68,7 @@ class GuiIngame(Gui):
                 elif (i << 1) + 1 == health:
                     self.drawTexturedModalRect(x, y, 61, 0, 9, 9)
 
-            if self.__mc.thePlayer.isInsideOfMaterial():
+            if self.__mc.thePlayer.isInsideOfWater():
                 bubbles = math.ceil((self.__mc.thePlayer.air - 2) * 10.0 / 300.0)
                 rem = math.ceil(self.__mc.thePlayer.air * 10.0 / 300.0) - bubbles
                 for i in range(bubbles + rem):

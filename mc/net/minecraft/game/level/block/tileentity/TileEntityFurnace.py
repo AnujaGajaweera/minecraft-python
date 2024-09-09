@@ -156,8 +156,11 @@ class TileEntityFurnace(TileEntity, Inventory):
             return True
         elif self.__furnaceItemStacks[2].itemID != itemId:
             return False
+        elif self.__furnaceItemStacks[2].stackSize < 64:
+            return True
         else:
-            return self.__furnaceItemStacks[2].stackSize < Inventory.STACK_LIMIT
+            return self.__furnaceItemStacks[2].stackSize < \
+                   items.itemsList[itemId].getItemStackLimit()
 
     @staticmethod
     def __smeltItem(itemId):
@@ -171,6 +174,8 @@ class TileEntityFurnace(TileEntity, Inventory):
             return blocks.glass.blockID
         elif itemId == items.porkRaw.shiftedIndex:
             return items.porkCooked.shiftedIndex
+        elif itemId == blocks.cobblestone.blockID:
+            return blocks.stone.blockID
         else:
             return -1
 

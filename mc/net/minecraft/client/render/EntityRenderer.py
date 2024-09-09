@@ -265,7 +265,7 @@ class EntityRenderer:
         vec = self.__orientCamera(alpha)
         vec2 = vec.addVector(xy * reach, x2 * reach, y1 * reach)
         self.__pointedEntity = None
-        entities = self.__mc.theWorld.entityMap.getEntitiesWithinAABBExcludingEntity(
+        entities = self.__mc.theWorld.entityMap.getEntitiesWithinAABB(
             self.__mc.thePlayer, self.__mc.thePlayer.boundingBox.addCoord(
                 xy * reach, x2 * reach, y1 * reach
             )
@@ -306,7 +306,7 @@ class EntityRenderer:
                 gl.glTranslatef(-((i << 1) - 1) * 0.07, 0.0, 0.0)
 
             fov = 70.0
-            if self.__mc.thePlayer.isInsideOfMaterial():
+            if self.__mc.thePlayer.isInsideOfWater():
                 fov = 60.0
 
             if self.__mc.thePlayer.health <= 0:
@@ -418,7 +418,7 @@ class EntityRenderer:
             self.__mc.effectRenderer.renderParticles(self.__mc.thePlayer, alpha)
             self.__mc.renderGlobal.oobGroundRenderer()
 
-            if self.__mc.objectMouseOver and self.__mc.thePlayer.isInsideOfMaterial():
+            if self.__mc.objectMouseOver and self.__mc.thePlayer.isInsideOfWater():
                 gl.glDisable(gl.GL_ALPHA_TEST)
                 self.__mc.renderGlobal.drawBlockBreaking(
                     self.__mc.objectMouseOver, 0,
@@ -447,7 +447,7 @@ class EntityRenderer:
             gl.glDepthMask(True)
             gl.glEnable(gl.GL_CULL_FACE)
             gl.glDisable(gl.GL_BLEND)
-            if self.__mc.objectMouseOver and not self.__mc.thePlayer.isInsideOfMaterial():
+            if self.__mc.objectMouseOver and not self.__mc.thePlayer.isInsideOfWater():
                 gl.glDisable(gl.GL_ALPHA_TEST)
                 self.__mc.renderGlobal.drawBlockBreaking(
                     self.__mc.objectMouseOver, 0,

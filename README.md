@@ -4,18 +4,18 @@
 
 _**Minecraft: Python Edition**_ is a project that strives to recreate each and every old Minecraft version in Python 3 using the **Pyglet** multimedia library and **Cython** for performance.
 
-The project is currently working on the Indev versions of Minecraft.
-The latest version is **Indev 20100218** as released on _**February 18, 2010**_.
+The project has completed the Indev versions of Minecraft.
+This version of Indev, the final one, is **Indev 20100223** as released on _**February 23, 2010**_.
 
-This version adds furnaces to the game, replacing the lava/fire smelting system.
-Flint and porkchops are also newly added in this version, mobs will now drop the same items as they would in Alpha.
+This version adds paintings to the game and makes wood logs drop as logs instead of planks.
 
-Features from previous Indev versions include the Indev mossy cobblestone spawn house, NBT level file saving, mobs and animals, farming,
-durable tools, armor, day and night cycle, difficulty, torches, advanced liquid spread, TNT explosives, chests, the main menu, workbench crafting, and soup.
+Features added in Indev include the wood spawn house, NBT level file saving, mobs and animals, farming, furnaces,
+durable tools, armor, day and night cycle, difficulty, torches, advanced liquid spread,
+TNT explosives, chests, the main menu, workbench crafting, porkchops, soup, and flint and steel.
 
-To easily install this version of *Minecraft: Python Edition*, just run `python -m pip install minecraft-python==20100219`.
+To easily install this version of *Minecraft: Python Edition*, just run `python -m pip install minecraft-python==20100223`.
 
-You can learn more about this version [on the Minecraft wiki.](https://minecraft.wiki/w/Java_Edition_Indev_20100219)
+You can learn more about this version [on the Minecraft wiki.](https://minecraft.wiki/w/Java_Edition_Indev_20100223)
 
 ### Organization
 
@@ -51,7 +51,7 @@ World size and world shape (*Square*, *Long*, *Deep*) may also be selected.
 
 Levels can be saved to a single *.mclevel* NBT file in the pause menu. The level files are perfectly compatible with Java and vice versa.
 
-Mushroom bowl soup and bread will restore health. Check the Wiki for crafting recipes added in this version.
+Porkchops, mushroom bowl soup, and bread will restore health. Check the Wiki for crafting recipes added in this version.
 
 ![Isometric screenshot](/map.png?raw=true)
 

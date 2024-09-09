@@ -223,7 +223,7 @@ class ItemRenderer:
 
             gl.glColor4f(1.0, 1.0, 1.0, 1.0)
             gl.glDisable(gl.GL_BLEND)
-        if self.__mc.thePlayer.isInsideOfMaterial():
+        if self.__mc.thePlayer.isInsideOfWater():
             tex = self.__mc.renderEngine.getTexture('water.png')
             gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
             t = tessellator

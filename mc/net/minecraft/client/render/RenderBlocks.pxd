@@ -13,7 +13,7 @@ cdef class RenderBlocks:
         Tessellator __tessellator
         World __blockAccess
         int __overrideBlockTexture
-        bint __flipTexture
+        bint __renderAllFaces
 
     cdef bint renderBlockByRenderType(self, Block block, int x, int y, int z)
     cdef __renderBlockFire(self, Block block, int x, int y, int z)

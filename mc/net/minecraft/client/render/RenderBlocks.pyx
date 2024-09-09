@@ -14,7 +14,7 @@ cdef class RenderBlocks:
         self.__blockAccess = world
         self.__tessellator = tessellator
         self.__overrideBlockTexture = -1
-        self.__flipTexture = False
+        self.__renderAllFaces = False
 
     def renderBlockUsingTexture(self, Block block, int x, int y, int z, int tex):
         self.__overrideBlockTexture = tex
@@ -22,9 +22,9 @@ cdef class RenderBlocks:
         self.__overrideBlockTexture = -1
 
     def renderBlockAllFaces(self, Block block, int x, int y, int z):
-        self.__flipTexture = True
+        self.__renderAllFaces = True
         self.renderBlockByRenderType(block, x, y, z)
-        self.__flipTexture = False
+        self.__renderAllFaces = False
 
     cdef bint renderBlockByRenderType(self, Block block, int x, int y, int z):
         cdef int renderType
@@ -35,7 +35,7 @@ cdef class RenderBlocks:
         layerOk = False
         renderType = block.getRenderType()
         if renderType == 0:
-            if self.__flipTexture or block.shouldSideBeRendered(self.__blockAccess, x, y - 1, z, 0):
+            if self.__renderAllFaces or block.shouldSideBeRendered(self.__blockAccess, x, y - 1, z, 0):
                 b = block.getBlockBrightness(self.__blockAccess, x, y - 1, z)
                 if self.__blockAccess.lightValue[block.blockID] > 0:
                     b = 1.0
@@ -46,7 +46,7 @@ cdef class RenderBlocks:
                     block.getBlockTexture(self.__blockAccess, x, y, z, 0)
                 )
                 layerOk = True
-            if self.__flipTexture or block.shouldSideBeRendered(self.__blockAccess, x, y + 1, z, 1):
+            if self.__renderAllFaces or block.shouldSideBeRendered(self.__blockAccess, x, y + 1, z, 1):
                 b = block.getBlockBrightness(self.__blockAccess, x, y + 1, z)
                 if self.__blockAccess.lightValue[block.blockID] > 0:
                     b = 1.0
@@ -57,7 +57,7 @@ cdef class RenderBlocks:
                     block.getBlockTexture(self.__blockAccess, x, y, z, 1)
                 )
                 layerOk = True
-            if self.__flipTexture or block.shouldSideBeRendered(self.__blockAccess, x, y, z - 1, 2):
+            if self.__renderAllFaces or block.shouldSideBeRendered(self.__blockAccess, x, y, z - 1, 2):
                 b = block.getBlockBrightness(self.__blockAccess, x, y, z - 1)
                 if self.__blockAccess.lightValue[block.blockID] > 0:
                     b = 1.0
@@ -68,7 +68,7 @@ cdef class RenderBlocks:
                     block.getBlockTexture(self.__blockAccess, x, y, z, 2)
                 )
                 layerOk = True
-            if self.__flipTexture or block.shouldSideBeRendered(self.__blockAccess, x, y, z + 1, 3):
+            if self.__renderAllFaces or block.shouldSideBeRendered(self.__blockAccess, x, y, z + 1, 3):
                 b = block.getBlockBrightness(self.__blockAccess, x, y, z + 1)
                 if self.__blockAccess.lightValue[block.blockID] > 0:
                     b = 1.0
@@ -79,7 +79,7 @@ cdef class RenderBlocks:
                     block.getBlockTexture(self.__blockAccess, x, y, z, 3)
                 )
                 layerOk = True
-            if self.__flipTexture or block.shouldSideBeRendered(self.__blockAccess, x - 1, y, z, 4):
+            if self.__renderAllFaces or block.shouldSideBeRendered(self.__blockAccess, x - 1, y, z, 4):
                 b = block.getBlockBrightness(self.__blockAccess, x - 1, y, z)
                 if self.__blockAccess.lightValue[block.blockID] > 0:
                     b = 1.0
@@ -90,7 +90,7 @@ cdef class RenderBlocks:
                     block.getBlockTexture(self.__blockAccess, x, y, z, 4)
                 )
                 layerOk = True
-            if self.__flipTexture or block.shouldSideBeRendered(self.__blockAccess, x + 1, y, z, 5):
+            if self.__renderAllFaces or block.shouldSideBeRendered(self.__blockAccess, x + 1, y, z, 5):
                 b = block.getBlockBrightness(self.__blockAccess, x + 1, y, z)
                 if self.__blockAccess.lightValue[block.blockID] > 0:
                     b = 1.0

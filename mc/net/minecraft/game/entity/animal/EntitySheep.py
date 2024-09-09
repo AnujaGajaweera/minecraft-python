@@ -18,7 +18,7 @@ class EntitySheep(EntityAnimal):
             drops = 1 + self._rand.nextInt(3)
             for i in range(drops):
                 drop = self.entityDropItem(
-                    blocks.clothDarkGray.blockID + self._rand.nextInt(3), 1, 1.0
+                    blocks.clothGray.blockID, 1, 1.0
                 )
                 drop.motionY += self._rand.nextFloat() * 0.05
                 drop.motionX += (self._rand.nextFloat() - self._rand.nextFloat()) * 0.1

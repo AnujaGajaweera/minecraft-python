@@ -1,4 +1,5 @@
 from mc.net.minecraft.game.item.ItemFlintAndSteel import ItemFlintAndSteel
+from mc.net.minecraft.game.item.ItemPainting import ItemPainting
 from mc.net.minecraft.game.item.ItemPickaxe import ItemPickaxe
 from mc.net.minecraft.game.item.ItemArmor import ItemArmor
 from mc.net.minecraft.game.item.ItemSword import ItemSword
@@ -100,6 +101,8 @@ class Items:
 
         self.porkRaw = ItemFood(self, 63, 3).setIconIndex(87)
         self.porkCooked = ItemFood(self, 64, 8).setIconIndex(88)
+
+        self.painting = ItemPainting(self, 65).setIconIndex(26)
 
         for i in range(256):
             if blocks.blocksList[i]:

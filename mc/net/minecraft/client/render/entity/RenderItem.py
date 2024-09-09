@@ -97,11 +97,11 @@ class RenderItem(Render):
         hoverY = math.sin((entity.age + a) / 10.0 + entity.hoverStart) * 0.1 + 0.1
         rot = ((entity.age + a) / 20.0 + entity.hoverStart) * (180.0 / math.pi)
         renders = 1
-        if entity.item.stackSize > 1:
+        if item.stackSize > 1:
             renders = 2
-        if entity.item.stackSize > 5:
+        if item.stackSize > 5:
             renders = 3
-        if entity.item.stackSize > 20:
+        if item.stackSize > 20:
             renders = 4
 
         gl.glTranslatef(xd, yd + hoverY, zd)

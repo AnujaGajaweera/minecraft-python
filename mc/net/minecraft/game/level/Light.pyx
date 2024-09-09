@@ -339,5 +339,5 @@ cdef class Light:
                         self, x0, y0, z0, x1, y1, z1
                     ))
 
-    def debugSkylightUpdates(self):
+    def debugLightUpdates(self):
         return str(len(self.__blockLightList) + len(self.__skyLightList))

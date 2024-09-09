@@ -438,6 +438,7 @@ class Minecraft(window.Window):
 
         self.effectRenderer = EffectRenderer(self.theWorld, self.renderEngine)
         self.ingameGUI = GuiIngame(self)
+        app.platform_event_loop.start()
 
         lastTime = getMillis()
         frames = 0
@@ -446,7 +447,10 @@ class Minecraft(window.Window):
                 clock.tick()
                 self.dispatch_events()
                 self.dispatch_event('on_draw')
-                app.platform_event_loop.step(timeout=0.001)
+                if pyglet.compat_platform == 'win32':
+                    app.platform_event_loop.step(timeout=0)
+                else:
+                    app.platform_event_loop.step(timeout=0.001)
                 self.flip()
 
                 frames += 1
@@ -458,6 +462,7 @@ class Minecraft(window.Window):
         except MinecraftError:
             pass
         finally:
+            app.platform_event_loop.stop()
             self.destroy()
 
     def setIngameFocus(self):
@@ -517,7 +522,7 @@ class Minecraft(window.Window):
                     if item and isinstance(self.objectMouseOver.entityHit, EntityLiving):
                         items.itemsList[item.itemID].hitEntity(item)
                         if item.stackSize <= 0:
-                            self.thePlayer.displayGUIInventory()
+                            self.thePlayer.destroyCurrentEquippedItem()
 
             return
         elif self.objectMouseOver.typeOfHit != 0:

@@ -619,10 +619,10 @@ cdef class World:
         self.__tickList.add(posType)
 
     cpdef bint checkIfAABBIsClear(self, AxisAlignedBB aabb):
-        return len(self.entityMap.getEntitiesWithinAABBExcludingEntity(None, aabb)) == 0
+        return len(self.entityMap.getEntitiesWithinAABB(None, aabb)) == 0
 
     cpdef bint checkIfAABBIsClearSpawn(self, AxisAlignedBB aabb):
-        entities = self.entityMap.getEntitiesWithinAABBExcludingEntity(None, aabb)
+        entities = self.entityMap.getEntitiesWithinAABB(None, aabb)
         for entity in entities:
             if entity.preventEntitySpawning:
                 return False
@@ -630,7 +630,7 @@ cdef class World:
         return True
 
     def getEntitiesWithinAABBExcludingEntity(self, entity, AxisAlignedBB aabb):
-        return self.entityMap.getEntitiesWithinAABBExcludingEntity(entity, aabb)
+        return self.entityMap.getEntitiesWithinAABB(entity, aabb)
 
     cpdef inline bint isSolid(self, float x, float y, float z, float offset):
         if self.__isBlockOpaque(x - 0.1, y - 0.1, z - 0.1):
@@ -1433,7 +1433,7 @@ cdef class World:
 
     def debugSkylightUpdates(self):
         return str(len(self.__tickList)) + '. L: ' + \
-               str(self.__lightUpdates.debugSkylightUpdates())
+               str(self.__lightUpdates.debugLightUpdates())
 
     def setLevel(self):
         cdef int i

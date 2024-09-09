@@ -1,4 +1,5 @@
 from mc.net.minecraft.client.LoadingScreenRenderer import LoadingScreenRenderer
+from mc.net.minecraft.game.entity.EntityPainting import EntityPainting
 from mc.net.minecraft.game.entity.animal.EntityPig import EntityPig
 from mc.net.minecraft.game.entity.animal.EntitySheep import EntitySheep
 from mc.net.minecraft.game.entity.misc.EntityItem import EntityItem
@@ -119,6 +120,8 @@ class LevelLoader:
             return EntityGiantZombie(world)
         elif entityId == 'Item':
             return EntityItem(world)
+        elif entityId == 'Painting':
+            return EntityPainting(world)
 
     def save(self, world, file):
         if self.__guiLoading:

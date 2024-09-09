@@ -76,7 +76,7 @@ cdef class EntityLiving(Entity):
         else:
             self.__livingSoundTime += 1
 
-        if self.isInsideOfMaterial():
+        if self.isInsideOfWater():
             self.air -= 1
             if self.air == -20:
                 self.air = 0

@@ -362,7 +362,7 @@ cdef class Entity:
             self.boundingBox.expand(0.0, -0.4, 0.0), Material.water
         )
 
-    def isInsideOfMaterial(self):
+    def isInsideOfWater(self):
         block = self._worldObj.getBlockId(<int>self.posX,
                                           <int>(self.posY + self._getEyeHeight()),
                                           <int>self.posZ)

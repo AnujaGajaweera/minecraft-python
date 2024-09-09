@@ -66,7 +66,7 @@ class EntityPlayerSP(EntityPlayer):
     def displayGUIFurnace(self, furnaceInventory):
         self.__mc.displayGuiScreen(GuiFurnace(self.inventory, furnaceInventory))
 
-    def displayGUIInventory(self):
+    def destroyCurrentEquippedItem(self):
         self.inventory.setInventorySlotContents(self.inventory.currentItem, None)
 
     def onItemPickup(self, item):

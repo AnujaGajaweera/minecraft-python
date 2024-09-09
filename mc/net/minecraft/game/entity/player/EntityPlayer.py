@@ -120,7 +120,7 @@ class EntityPlayer(EntityLiving):
         stack = self.inventory.mainInventory[self.inventory.currentItem]
         if stack:
             strength = 1.0 * stack.getItem().getStrVsBlock(block)
-        if self.isInsideOfMaterial():
+        if self.isInsideOfWater():
             strength /= 5.0
         if not self.onGround:
             strength /= 5.0

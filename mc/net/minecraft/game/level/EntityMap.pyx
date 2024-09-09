@@ -70,7 +70,7 @@ cdef class EntityMap:
 
         return l
 
-    cpdef list getEntitiesWithinAABBExcludingEntity(self, Entity entity, AxisAlignedBB aabb):
+    cpdef list getEntitiesWithinAABB(self, Entity entity, AxisAlignedBB aabb):
         self.__tmp.clear()
         if aabb:
             return self.__addEntities(entity, aabb.minX, aabb.minY, aabb.minZ,

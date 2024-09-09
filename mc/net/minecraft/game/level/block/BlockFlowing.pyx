@@ -47,10 +47,7 @@ cdef class BlockFlowing(BlockFluid):
                  self._canFlow(world, x, y, z + 1)
         if change and world.getBlockMaterial(x, y - 1, z) == self.material:
             res = world.floodFill(x, y - 1, z, self.__movingId, self.__stillId)
-            if res <= 0:
-                return False
-
-            if res == 2:
+            if res == 1:
                 pos = world.fluidFlowCheck(x, y, z, self.__movingId, self.__stillId)
                 if pos != -9999.0:
                     if pos < 0:

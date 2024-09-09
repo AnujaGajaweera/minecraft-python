@@ -27,5 +27,5 @@ cdef class EntityMap:
                           float x1, float y1, float z1)
     cdef list __addEntities(self, Entity oEntity, float x0, float y0, float z0,
                             float x1, float y1, float z1, list l)
-    cpdef list getEntitiesWithinAABBExcludingEntity(self, Entity entity, AxisAlignedBB aabb)
+    cpdef list getEntitiesWithinAABB(self, Entity entity, AxisAlignedBB aabb)
     cdef updateEntities(self)

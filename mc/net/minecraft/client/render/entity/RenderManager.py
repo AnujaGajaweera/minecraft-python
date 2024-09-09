@@ -1,6 +1,7 @@
 from mc.net.minecraft.client.render.Tessellator import tessellator
 from mc.net.minecraft.client.render.entity.RenderEntity import RenderEntity
 from mc.net.minecraft.client.render.entity.RenderPlayer import RenderPlayer
+from mc.net.minecraft.client.render.entity.RenderPainting import RenderPainting
 from mc.net.minecraft.client.render.entity.RenderArrow import RenderArrow
 from mc.net.minecraft.client.render.entity.RenderLiving import RenderLiving
 from mc.net.minecraft.client.render.entity.RenderCreeper import RenderCreeper
@@ -17,6 +18,7 @@ from mc.net.minecraft.client.model.ModelZombie import ModelZombie
 from mc.net.minecraft.client.model.ModelBiped import ModelBiped
 from mc.net.minecraft.game.entity.Entity import Entity
 from mc.net.minecraft.game.entity.EntityLiving import EntityLiving
+from mc.net.minecraft.game.entity.EntityPainting import EntityPainting
 from mc.net.minecraft.game.entity.animal.EntityPig import EntityPig
 from mc.net.minecraft.game.entity.animal.EntitySheep import EntitySheep
 from mc.net.minecraft.game.entity.monster.EntityCreeper import EntityCreeper
@@ -52,6 +54,7 @@ class RenderManager:
         self.__entityRenderMap[EntityGiantZombie] = RenderGiantZombie(ModelZombie(), 0.5, 6.0)
         self.__entityRenderMap[EntityLiving] = RenderLiving(ModelBiped(), 0.5)
         self.__entityRenderMap[Entity] = RenderEntity()
+        self.__entityRenderMap[EntityPainting] = RenderPainting()
         self.__entityRenderMap[EntityArrow] = RenderArrow()
         self.__entityRenderMap[EntityItem] = RenderItem()
         self.__entityRenderMap[EntityTNTPrimed] = RenderTNTPrimed()

@@ -86,7 +86,7 @@ class EntityArrow(Entity):
             motionVec = Vec3D(hit.hitVec.xCoord, hit.hitVec.yCoord, hit.hitVec.zCoord)
 
         target = None
-        entities = self._worldObj.entityMap.getEntitiesWithinAABBExcludingEntity(
+        entities = self._worldObj.entityMap.getEntitiesWithinAABB(
             self, self.boundingBox.addCoord(self.motionX, self.motionY,
                                             self.motionZ).expand(1.0, 1.0, 1.0)
         )

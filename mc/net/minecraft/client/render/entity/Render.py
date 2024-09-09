@@ -138,10 +138,10 @@ class Render:
             t.startDrawingQuads()
 
             while aspect > 0.0:
-                t.addVertexWithUV(-0.5, 0.0 - zo, 0.0, u0, v1)
                 t.addVertexWithUV(xo - 0.5, 0.0 - zo, 0.0, u1, v1)
-                t.addVertexWithUV(xo - 0.5, 1.4 - zo, 0.0, u1, v0)
+                t.addVertexWithUV(-0.5, 0.0 - zo, 0.0, u0, v1)
                 t.addVertexWithUV(-0.5, 1.4 - zo, 0.0, u0, v0)
+                t.addVertexWithUV(xo - 0.5, 1.4 - zo, 0.0, u1, v0)
                 aspect -= 1.0
                 zo -= 1.0
                 xo *= 0.9
